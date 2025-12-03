@@ -1,0 +1,57 @@
+# General
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
+
+# Python (Global)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Root Level
+.env
+.venv/
+venv/
+
+# Frontend (frontend/)
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/*.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+
+# Backend (backend/ - Java/Maven)
+backend/target/
+backend/*.class
+backend/*.war
+backend/*.ear
+backend/*.zip
+backend/hs_err_pid*
+
+# Model (模型/)
+模型/.venv/
+模型/node_modules/
+模型/ACSM指南markdown_output/
+模型/bge_small_embeddings/
+模型/bge-reranker-v2-m3/
+模型/data/
+模型/docs/
+
+# Model Backend (模型/backend/)
+模型/backend/data/
+模型/backend/__pycache__/
+
+# Specific Large Files
+模型/指令-响应构建数据集instruction_response_pairs_improved.json
+
