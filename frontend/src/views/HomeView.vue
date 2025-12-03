@@ -1,7 +1,11 @@
 <template>
   <div class="home-container">
-    <el-header>
+    <el-header class="top-header">
       <h1>体质测试健康分析系统</h1>
+      <div class="user-info">
+        <span>欢迎，{{ userInfo?.realName || userInfo?.username }}</span>
+        <el-button type="text" @click="handleLogout">退出登录</el-button>
+      </div>
     </el-header>
     
     <el-main>
@@ -297,18 +301,37 @@
 
 <script setup>
 import { reactive, ref, computed, nextTick, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { InfoFilled, Flag, Calendar } from '@element-plus/icons-vue'
 import axios from 'axios'
 import * as echarts from 'echarts'
 import { marked } from 'marked'
 
+const router = useRouter()
 const loading = ref(false)
 const result = ref(null)
 const diseasesInput = ref('')
 const activeNames = ref(['1', '2', '3'])
 const radarChartRef = ref(null)
 let radarChart = null
+
+// 获取用户信息
+const userInfo = ref(null)
+onMounted(() => {
+  const storedUserInfo = localStorage.getItem('userInfo')
+  if (storedUserInfo) {
+    userInfo.value = JSON.parse(storedUserInfo)
+  }
+})
+
+// 退出登录
+const handleLogout = () => {
+  localStorage.removeItem('token')
+  localStorage.removeItem('userInfo')
+  ElMessage.success('已退出登录')
+  router.push('/login')
+}
 
 const form = reactive({
   age: 30,
@@ -554,6 +577,26 @@ window.addEventListener('resize', () => {
   padding: 20px;
   background-color: #f5f7fa;
   min-height: 100vh;
+}
+.top-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+  padding: 0 20px;
+  margin: -20px -20px 20px -20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.top-header h1 {
+  margin: 0;
+  font-size: 20px;
+  color: #303133;
+}
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #606266;
 }
 .box-card {
   margin-bottom: 20px;
