@@ -1,16 +1,10 @@
 <template>
   <div class="home-container">
-    <el-header class="top-header">
-      <h1>体质测试健康分析系统</h1>
-      <div class="user-info">
-        <span>欢迎，{{ userInfo?.realName || userInfo?.username }}</span>
-        <el-button type="text" @click="handleLogout">退出登录</el-button>
-      </div>
-    </el-header>
+    <NavBar />
     
     <el-main>
-      <el-row :gutter="20">
-        <el-col :span="10">
+      <el-row justify="center">
+        <el-col :span="14">
           <el-card class="box-card">
             <template #header>
               <div class="card-header">
@@ -48,7 +42,7 @@
               </el-form-item>
               
               <el-form-item label="BMI (kg/m²)">
-                <el-input-number v-model="form.bmi" :min="10" :max="50" :precision="1" />
+                <el-input-number v-model="calculatedBMI" :min="10" :max="50" :precision="1" disabled />
               </el-form-item>
               
               <el-form-item label="体脂率 (%)">
@@ -116,7 +110,7 @@
               <el-divider content-position="left">其他信息</el-divider>
               
               <el-form-item label="运动偏好">
-                <el-checkbox-group v-model="form.exercise_preferences">
+                <el-checkbox-group v-model="form.exercise_preferences" :max="2">
                   <el-checkbox label="健步走">健步走</el-checkbox>
                   <el-checkbox label="慢跑">慢跑</el-checkbox>
                   <el-checkbox label="游泳">游泳</el-checkbox>
@@ -154,184 +148,21 @@
             </el-form>
           </el-card>
         </el-col>
-        
-        <el-col :span="14">
-          <el-card class="box-card result-card" v-loading="loading">
-            <template #header>
-              <div class="card-header">
-                <span>分析报告</span>
-                <el-tag v-if="result" :type="getRatingType(result.overall_rating)" effect="dark">
-                  {{ result.overall_rating }} ({{ result.overall_score }}分)
-                </el-tag>
-              </div>
-            </template>
-            
-            <div v-if="result" class="report-content">
-              <!-- 1. 综合概览 -->
-              <div class="overview-section">
-                <el-row :gutter="20">
-                  <el-col :span="10">
-                    <div ref="radarChartRef" class="radar-chart"></div>
-                  </el-col>
-                  <el-col :span="14">
-                    <div class="score-summary">
-                      <h3>体质测试总评</h3>
-                      <el-progress 
-                        type="dashboard" 
-                        :percentage="result.overall_score" 
-                        :color="getScoreColor"
-                      >
-                        <template #default="{ percentage }">
-                          <span class="percentage-value">{{ percentage }}</span>
-                          <span class="percentage-label">分</span>
-                        </template>
-                      </el-progress>
-                      <div class="rating-text">{{ result.overall_rating }}</div>
-                    </div>
-                  </el-col>
-                </el-row>
-              </div>
-
-              <el-divider>各项指标详细评分</el-divider>
-
-              <!-- 2. 指标详情表格 -->
-              <el-table :data="metricsTableData" style="width: 100%" stripe border size="small">
-                <el-table-column prop="name" label="指标" width="140" />
-                <el-table-column prop="score" label="得分" width="100">
-                  <template #default="scope">
-                    <span :style="{ color: getScoreColor(scope.row.score) }">{{ scope.row.score }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="评分" width="180">
-                  <template #default="scope">
-                    <el-progress 
-                      :percentage="scope.row.score" 
-                      :color="getScoreColor(scope.row.score)" 
-                      :format="() => ''"
-                    />
-                  </template>
-                </el-table-column>
-                <el-table-column prop="rating" label="等级">
-                  <template #default="scope">
-                    <el-tag :type="getRatingType(scope.row.rating)" size="small">{{ scope.row.rating }}</el-tag>
-                  </template>
-                </el-table-column>
-              </el-table>
-
-              <el-divider>运动处方建议</el-divider>
-
-              <!-- 3. 报告文本内容 -->
-              <div class="markdown-content">
-                <!-- 摘要 -->
-                <el-card shadow="hover" class="text-card" v-if="parsedReport.summary">
-                  <template #header>
-                    <div class="card-header-small">
-                      <el-icon><InfoFilled /></el-icon> <span>体质分析总结</span>
-                    </div>
-                  </template>
-                  <div class="md-body" v-html="renderMarkdown(parsedReport.summary)"></div>
-                </el-card>
-
-                <!-- 目标 -->
-                <el-card shadow="hover" class="text-card" v-if="parsedReport.goals">
-                  <template #header>
-                    <div class="card-header-small">
-                      <el-icon><Flag /></el-icon> <span>运动处方目标</span>
-                    </div>
-                  </template>
-                  <div class="md-body" v-html="renderMarkdown(parsedReport.goals)"></div>
-                </el-card>
-
-                <!-- 训练计划 (时间轴) -->
-                <el-card shadow="hover" class="text-card" v-if="parsedReport.plan">
-                  <template #header>
-                    <div class="card-header-small">
-                      <el-icon><Calendar /></el-icon> <span>分阶段训练计划</span>
-                    </div>
-                  </template>
-                  
-                  <!-- 尝试解析阶段 -->
-                  <div v-if="parsedReport.phases.length > 0">
-                    <el-timeline>
-                      <el-timeline-item
-                        v-for="(phase, index) in parsedReport.phases"
-                        :key="index"
-                        :type="index === 0 ? 'primary' : 'success'"
-                        :hollow="index === 0"
-                        :timestamp="phase.title"
-                        placement="top"
-                      >
-                        <el-card class="phase-card">
-                          <div class="md-body" v-html="renderMarkdown(phase.content)"></div>
-                        </el-card>
-                      </el-timeline-item>
-                    </el-timeline>
-                  </div>
-                  <div v-else class="md-body" v-html="renderMarkdown(parsedReport.plan)"></div>
-                </el-card>
-
-                <!-- 其他建议 -->
-                <el-collapse v-model="activeNames">
-                  <el-collapse-item title="运动禁忌" name="1" v-if="parsedReport.contraindications">
-                    <div class="md-body" v-html="renderMarkdown(parsedReport.contraindications)"></div>
-                  </el-collapse-item>
-                  <el-collapse-item title="进度监测" name="2" v-if="parsedReport.monitoring">
-                    <div class="md-body" v-html="renderMarkdown(parsedReport.monitoring)"></div>
-                  </el-collapse-item>
-                  <el-collapse-item title="营养建议" name="3" v-if="parsedReport.nutrition">
-                    <div class="md-body" v-html="renderMarkdown(parsedReport.nutrition)"></div>
-                  </el-collapse-item>
-                </el-collapse>
-                
-                <div class="disclaimer">
-                  <p>本运动推荐仅供参考，请您务必在专业人士指导下进行运动。</p>
-                </div>
-              </div>
-            </div>
-            
-            <div v-else class="empty-state">
-              <el-empty description="暂无分析结果，请在左侧填写数据并提交" />
-            </div>
-          </el-card>
-        </el-col>
       </el-row>
     </el-main>
   </div>
 </template>
 
 <script setup>
-import { reactive, ref, computed, nextTick, onMounted, watch } from 'vue'
+import { reactive, ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { InfoFilled, Flag, Calendar } from '@element-plus/icons-vue'
 import axios from 'axios'
-import * as echarts from 'echarts'
-import { marked } from 'marked'
+import NavBar from '../components/NavBar.vue'
 
 const router = useRouter()
 const loading = ref(false)
-const result = ref(null)
 const diseasesInput = ref('')
-const activeNames = ref(['1', '2', '3'])
-const radarChartRef = ref(null)
-let radarChart = null
-
-// 获取用户信息
-const userInfo = ref(null)
-onMounted(() => {
-  const storedUserInfo = localStorage.getItem('userInfo')
-  if (storedUserInfo) {
-    userInfo.value = JSON.parse(storedUserInfo)
-  }
-})
-
-// 退出登录
-const handleLogout = () => {
-  localStorage.removeItem('token')
-  localStorage.removeItem('userInfo')
-  ElMessage.success('已退出登录')
-  router.push('/login')
-}
 
 const form = reactive({
   age: 30,
@@ -358,218 +189,115 @@ const form = reactive({
   diseases: []
 })
 
-const metricNameMap = {
-  "bmi": "BMI",
-  "body_fat_rate": "体脂率",
-  "vital_capacity": "肺活量",
-  "max_oxygen_uptake": "最大摄氧量",
-  "sit_and_reach": "坐位体前屈",
-  "single_leg_stand": "闭眼单脚站立",
-  "reaction_time": "选择反应时间",
-  "grip_strength": "握力",
-  "sit_ups_per_minute": "仰卧起坐",
-  "push_ups": "俯卧撑",
-  "vertical_jump": "纵跳",
-  "high_knees_2min": "2分钟高抬腿",
-  "sit_to_stand_30s": "30秒坐站"
-}
+const calculatedBMI = computed(() => {
+  if (form.height && form.weight) {
+    const heightInMeters = form.height / 100
+    return Number((form.weight / (heightInMeters * heightInMeters)).toFixed(1))
+  }
+  return 0
+})
+
+// Watch for BMI changes to update form.bmi
+watch(calculatedBMI, (newVal) => {
+  form.bmi = newVal
+})
 
 const handleAgeChange = (val) => {
   // Reset age-specific fields if needed
 }
 
 const submitForm = async () => {
+  if (form.exercise_preferences.length !== 2) {
+    ElMessage.warning('请选择且只选择2项运动偏好')
+    return
+  }
+  
+  const token = localStorage.getItem('token')
+  if (!token) {
+    ElMessage.warning('请先登录')
+    router.push('/login')
+    return
+  }
+
   loading.value = true
   try {
     form.diseases = diseasesInput.value ? diseasesInput.value.split(/[,，]/).map(s => s.trim()).filter(s => s) : []
     
-    const response = await axios.post('http://localhost:8000/analyze', form)
+    // 构建符合 Java 后端 UserProfile 实体的驼峰格式数据
+    const profileData = {
+      age: form.age,
+      gender: form.gender,
+      height: form.height,
+      weight: form.weight,
+      bmi: form.bmi,
+      bodyFatRate: form.body_fat_rate,
+      vitalCapacity: form.vital_capacity,
+      sitAndReach: form.sit_and_reach,
+      singleLegStand: form.single_leg_stand,
+      reactionTime: form.reaction_time,
+      gripStrength: form.grip_strength,
+      maxOxygenUptake: form.max_oxygen_uptake,
+      sitUpsPerMinute: form.sit_ups_per_minute,
+      pushUps: form.push_ups,
+      verticalJump: form.vertical_jump,
+      highKnees2min: form.high_knees_2min,
+      sitToStand30s: form.sit_to_stand_30s,
+      exercisePreferences: form.exercise_preferences.join(','),
+      usesEquipment: form.uses_equipment,
+      exerciseRiskLevel: form.exercise_risk_level,
+      diseases: form.diseases.join(',')
+    }
     
-    result.value = response.data
-    ElMessage.success('分析完成')
-    
-    nextTick(() => {
-      initRadarChart()
+    // 请求 Java 后端进行分析（Java 后端会保存数据并调用 Python 后端）
+    const response = await axios.post('http://localhost:8080/api/profile/analyze', profileData, {
+      headers: { 'Authorization': token }
     })
+    
+    if (response.data.code === 200) {
+      ElMessage.success('分析完成')
+      
+      const responseData = response.data.data
+      if (responseData && responseData.id) {
+        router.push(`/report/${responseData.id}`)
+      }
+    } else {
+      throw new Error(response.data.message || '分析失败')
+    }
+
   } catch (error) {
     console.error(error)
-    ElMessage.error('分析失败: ' + (error.response?.data?.detail || error.message))
+    ElMessage.error('分析失败: ' + (error.response?.data?.message || error.message))
   } finally {
     loading.value = false
   }
 }
 
 const resetForm = () => {
-  result.value = null
-  if (radarChart) {
-    radarChart.dispose()
-    radarChart = null
-  }
+  // Reset form to default values
+  form.age = 30
+  form.gender = '男'
+  form.name = ''
+  form.height = 170
+  form.weight = 65
+  form.bmi = 22.5
+  form.body_fat_rate = 18
+  form.vital_capacity = 3500
+  form.sit_and_reach = 10
+  form.single_leg_stand = 30
+  form.reaction_time = 0.4
+  form.grip_strength = 40
+  form.max_oxygen_uptake = 35
+  form.sit_ups_per_minute = 30
+  form.push_ups = 20
+  form.vertical_jump = 40
+  form.high_knees_2min = null
+  form.sit_to_stand_30s = null
+  form.exercise_preferences = []
+  form.uses_equipment = false
+  form.exercise_risk_level = '低'
+  form.diseases = []
+  diseasesInput.value = ''
 }
-
-const getRatingType = (rating) => {
-  if (rating === '优秀') return 'success'
-  if (rating === '良好') return 'primary'
-  if (rating === '合格') return 'warning'
-  return 'danger'
-}
-
-const getScoreColor = (score) => {
-  if (score >= 85) return '#67C23A'
-  if (score >= 75) return '#409EFF'
-  if (score >= 60) return '#E6A23C'
-  return '#F56C6C'
-}
-
-const metricsTableData = computed(() => {
-  if (!result.value || !result.value.individual_scores) return []
-  
-  const scores = result.value.individual_scores
-  const ratings = result.value.individual_ratings || {}
-  
-  return Object.keys(scores).map(key => ({
-    key,
-    name: metricNameMap[key] || key,
-    score: scores[key],
-    rating: ratings[key] || '-'
-  }))
-})
-
-const initRadarChart = () => {
-  if (!radarChartRef.value || !result.value) return
-  
-  if (radarChart) {
-    radarChart.dispose()
-  }
-  
-  radarChart = echarts.init(radarChartRef.value)
-  
-  const indicators = metricsTableData.value.map(item => ({
-    name: item.name,
-    max: 100
-  }))
-  
-  const dataValues = metricsTableData.value.map(item => item.score)
-  
-  const option = {
-    tooltip: {},
-    radar: {
-      indicator: indicators,
-      radius: '65%',
-      splitNumber: 4,
-      axisName: {
-        color: '#666'
-      },
-      splitArea: {
-        areaStyle: {
-          color: ['#f5f7fa', '#f5f7fa', '#f5f7fa', '#f5f7fa'],
-          shadowColor: 'rgba(0, 0, 0, 0.1)',
-          shadowBlur: 10
-        }
-      }
-    },
-    series: [{
-      name: '体质评分',
-      type: 'radar',
-      data: [
-        {
-          value: dataValues,
-          name: '各项指标得分',
-          areaStyle: {
-            color: 'rgba(64, 158, 255, 0.2)'
-          },
-          lineStyle: {
-            color: '#409EFF'
-          },
-          itemStyle: {
-            color: '#409EFF'
-          }
-        }
-      ]
-    }]
-  }
-  
-  radarChart.setOption(option)
-}
-
-// Report Parsing Logic
-const parsedReport = computed(() => {
-  if (!result.value || !result.value.report) return {}
-  
-  const report = result.value.report
-  const sections = {
-    summary: '',
-    goals: '',
-    plan: '',
-    phases: [],
-    contraindications: '',
-    monitoring: '',
-    nutrition: ''
-  }
-  
-  // Split by headers (###)
-  const parts = report.split(/###\s+/g)
-  
-  parts.forEach(part => {
-    if (part.includes('体质分析总结')) {
-      sections.summary = part.replace(/\*\*一、\s*体质分析总结\*\*/, '').trim()
-    } else if (part.includes('运动处方目标')) {
-      sections.goals = part.replace(/\*\*三、\s*运动处方目标\*\*/, '').trim()
-    } else if (part.includes('分阶段训练计划')) {
-      const content = part.replace(/\*\*四、\s*分阶段训练计划\*\*/, '').trim()
-      sections.plan = content
-      
-      // Try to extract phases
-      const phaseRegex = /\*\*阶段(\d+)：(.*?)\*\*/g
-      let match
-      let lastIndex = 0
-      const phases = []
-      
-      // Find all phase headers
-      const matches = [...content.matchAll(phaseRegex)]
-      
-      for (let i = 0; i < matches.length; i++) {
-        const currentMatch = matches[i]
-        const nextMatch = matches[i + 1]
-        
-        const title = `阶段${currentMatch[1]}：${currentMatch[2]}`
-        const startIndex = currentMatch.index + currentMatch[0].length
-        const endIndex = nextMatch ? nextMatch.index : content.length
-        
-        const phaseContent = content.substring(startIndex, endIndex).trim()
-        phases.push({
-          title,
-          content: phaseContent
-        })
-      }
-      
-      if (phases.length > 0) {
-        sections.phases = phases
-      }
-      
-    } else if (part.includes('运动禁忌')) {
-      sections.contraindications = part.replace(/\*\*五、\s*运动禁忌\*\*/, '').trim()
-    } else if (part.includes('进度监测')) {
-      sections.monitoring = part.replace(/\*\*六、\s*进度监测\*\*/, '').trim()
-    } else if (part.includes('营养建议')) {
-      sections.nutrition = part.replace(/\*\*七、\s*营养建议\*\*/, '').trim()
-    }
-  })
-  
-  return sections
-})
-
-const renderMarkdown = (text) => {
-  if (!text) return ''
-  return marked(text)
-}
-
-// Resize chart on window resize
-window.addEventListener('resize', () => {
-  if (radarChart) {
-    radarChart.resize()
-  }
-})
 </script>
 
 <style scoped>
@@ -577,26 +305,6 @@ window.addEventListener('resize', () => {
   padding: 20px;
   background-color: #f5f7fa;
   min-height: 100vh;
-}
-.top-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #fff;
-  padding: 0 20px;
-  margin: -20px -20px 20px -20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-.top-header h1 {
-  margin: 0;
-  font-size: 20px;
-  color: #303133;
-}
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: #606266;
 }
 .box-card {
   margin-bottom: 20px;
@@ -610,70 +318,152 @@ window.addEventListener('resize', () => {
   display: flex;
   align-items: center;
   font-weight: bold;
-  font-size: 16px;
+  font-size: 18px; /* Increased font size */
+  color: #303133;
 }
-.card-header-small .el-icon {
-  margin-right: 8px;
+.header-icon {
+  margin-right: 10px;
+  font-size: 20px;
+  color: #409EFF;
+}
+.warning-header .header-icon {
+  color: #E6A23C;
 }
 .unit-text {
   margin-left: 10px;
   color: #909399;
 }
 .overview-section {
-  margin-bottom: 20px;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
 }
 .radar-chart {
   width: 100%;
-  height: 250px;
+  height: 300px; /* Increased height */
 }
 .score-summary {
   text-align: center;
-  padding-top: 20px;
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.section-title {
+  font-size: 20px;
+  margin-bottom: 20px;
+  color: #303133;
+}
+.score-circle {
+  margin-bottom: 15px;
 }
 .percentage-value {
   display: block;
   margin-top: 10px;
-  font-size: 28px;
+  font-size: 42px; /* Much larger font */
+  font-weight: bold;
+  color: #303133;
+  line-height: 1.2;
 }
 .percentage-label {
   display: block;
-  margin-top: 10px;
-  font-size: 12px;
+  font-size: 14px;
+  color: #909399;
 }
-.rating-text {
+.rating-badge {
   margin-top: 10px;
-  font-size: 20px;
+}
+.rating-tag {
+  font-size: 18px;
+  padding: 8px 20px;
+  height: auto;
+}
+.divider-title {
+  font-size: 18px;
   font-weight: bold;
-  color: #409EFF;
+  color: #606266;
+}
+.metrics-table {
+  margin-bottom: 30px;
+}
+.metric-name {
+  font-weight: bold;
+  font-size: 15px;
+}
+.metric-score {
+  font-weight: bold;
+  font-size: 16px;
 }
 .text-card {
-  margin-bottom: 15px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  transition: all 0.3s;
+}
+.text-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+.summary-card {
+  border-left: 5px solid #409EFF;
+}
+.goals-card {
+  border-left: 5px solid #67C23A;
+}
+.plan-card {
+  border-left: 5px solid #E6A23C;
+}
+.warning-card {
+  border-left: 5px solid #F56C6C;
+}
+.info-card {
+  border-left: 5px solid #909399;
+}
+.success-card {
+  border-left: 5px solid #67C23A;
 }
 .phase-card {
   margin-bottom: 10px;
+  background-color: #fdfdfd;
+}
+.timeline-container {
+  padding: 10px 0;
 }
 .md-body {
-  line-height: 1.6;
-  font-size: 14px;
+  line-height: 1.8;
+  font-size: 15px;
   color: #303133;
 }
+.large-text {
+  font-size: 16px; /* Larger body text */
+}
 .md-body :deep(h1), .md-body :deep(h2), .md-body :deep(h3) {
-  margin-top: 10px;
-  margin-bottom: 10px;
+  margin-top: 15px;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+.md-body :deep(strong) {
+  color: #303133;
+  font-weight: 700;
 }
 .md-body :deep(ul), .md-body :deep(ol) {
-  padding-left: 20px;
+  padding-left: 25px;
+  margin-bottom: 15px;
 }
 .md-body :deep(li) {
-  margin-bottom: 5px;
+  margin-bottom: 8px;
 }
 .disclaimer {
-  margin-top: 20px;
+  margin-top: 30px;
   text-align: center;
   color: #909399;
-  font-size: 12px;
+  font-size: 14px;
+  padding: 15px;
+  background: #f4f4f5;
+  border-radius: 4px;
 }
 .empty-state {
-  padding: 40px 0;
+  padding: 60px 0;
 }
 </style>
