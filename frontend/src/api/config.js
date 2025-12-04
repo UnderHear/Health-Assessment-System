@@ -1,5 +1,5 @@
 // API 基础配置
-export const API_BASE_URL = 'http://localhost:8080/api'
+export const API_BASE_URL = 'http://212.64.32.56:8080/api'
 
 // API 端点配置
 export const API_ENDPOINTS = {
