@@ -234,6 +234,7 @@ import {
 } from '@element-plus/icons-vue'
 import axios from 'axios'
 import NavBar from '../components/NavBar.vue'
+import { API_BASE_URL, API_ENDPOINTS, buildUrl } from '../api/config'
 
 const router = useRouter()
 const loading = ref(false)
@@ -245,8 +246,6 @@ const completedRecords = ref([])
 const recentCheckIns = ref([])
 const showCreateDialog = ref(false)
 const showCheckInDialog = ref(false)
-
-const API_BASE = 'http://localhost:8080/api'
 
 const createForm = ref({
   planName: '',
@@ -294,7 +293,7 @@ const fetchActivePlan = async () => {
   loading.value = true
   try {
     const token = localStorage.getItem('token')
-    const response = await axios.get(`${API_BASE}/training/active-plan`, {
+    const response = await axios.get(buildUrl(API_ENDPOINTS.TRAINING.GET_ACTIVE), {
       headers: { Authorization: token }
     })
     
@@ -314,7 +313,7 @@ const fetchActivePlan = async () => {
 const fetchCompletedRecords = async () => {
   try {
     const token = localStorage.getItem('token')
-    const response = await axios.get(`${API_BASE}/profile/history`, {
+    const response = await axios.get(buildUrl(API_ENDPOINTS.PROFILE.HISTORY), {
       headers: { Authorization: token }
     })
     
@@ -331,7 +330,7 @@ const fetchRecentCheckIns = async () => {
   
   try {
     const token = localStorage.getItem('token')
-    const response = await axios.get(`${API_BASE}/training/check-ins/${activePlan.value.id}`, {
+    const response = await axios.get(buildUrl(API_ENDPOINTS.TRAINING.GET_CHECK_INS(activePlan.value.id)), {
       headers: { Authorization: token }
     })
     
@@ -356,7 +355,7 @@ const createPlan = async () => {
   creating.value = true
   try {
     const token = localStorage.getItem('token')
-    const response = await axios.post(`${API_BASE}/training/create`, {
+    const response = await axios.post(buildUrl(API_ENDPOINTS.TRAINING.CREATE), {
       ...createForm.value,
       startDate: createForm.value.startDate.toISOString().split('T')[0]
     }, {
@@ -385,7 +384,7 @@ const submitCheckIn = async () => {
   checkingIn.value = true
   try {
     const token = localStorage.getItem('token')
-    const response = await axios.post(`${API_BASE}/training/check-in`, {
+    const response = await axios.post(buildUrl(API_ENDPOINTS.TRAINING.CHECK_IN), {
       planId: activePlan.value.id,
       checkInDate: new Date().toISOString().split('T')[0],
       ...checkInForm.value,
@@ -418,7 +417,7 @@ const handlePlanAction = async (command) => {
         cancelButtonText: '取消',
         type: 'warning'
       })
-      await axios.delete(`${API_BASE}/training/${activePlan.value.id}`, {
+      await axios.delete(buildUrl(API_ENDPOINTS.TRAINING.DELETE(activePlan.value.id)), {
         headers: { Authorization: token }
       })
       ElMessage.success('计划已删除')
@@ -429,19 +428,19 @@ const handlePlanAction = async (command) => {
         cancelButtonText: '取消',
         type: 'success'
       })
-      await axios.put(`${API_BASE}/training/complete/${activePlan.value.id}`, {}, {
+      await axios.put(buildUrl(API_ENDPOINTS.TRAINING.COMPLETE(activePlan.value.id)), {}, {
         headers: { Authorization: token }
       })
       ElMessage.success('恭喜完成计划！')
       activePlan.value = null
     } else if (command === 'pause') {
-      await axios.put(`${API_BASE}/training/pause/${activePlan.value.id}`, {}, {
+      await axios.put(buildUrl(API_ENDPOINTS.TRAINING.PAUSE(activePlan.value.id)), {}, {
         headers: { Authorization: token }
       })
       ElMessage.success('计划已暂停')
       await fetchActivePlan()
     } else if (command === 'resume') {
-      await axios.put(`${API_BASE}/training/resume/${activePlan.value.id}`, {}, {
+      await axios.put(buildUrl(API_ENDPOINTS.TRAINING.RESUME(activePlan.value.id)), {}, {
         headers: { Authorization: token }
       })
       ElMessage.success('计划已恢复')

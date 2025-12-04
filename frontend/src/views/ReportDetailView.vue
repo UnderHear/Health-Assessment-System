@@ -172,6 +172,7 @@ import axios from 'axios'
 import * as echarts from 'echarts'
 import { marked } from 'marked'
 import NavBar from '../components/NavBar.vue'
+import { API_BASE_URL, API_ENDPOINTS, buildUrl } from '../api/config'
 
 const route = useRoute()
 const router = useRouter()
@@ -236,7 +237,7 @@ const fetchReport = async () => {
   
   loading.value = true
   try {
-    const response = await axios.get(`http://localhost:8080/api/profile/${id}`, {
+    const response = await axios.get(buildUrl(API_ENDPOINTS.PROFILE.GET_BY_ID(id)), {
       headers: { 'Authorization': token }
     })
     

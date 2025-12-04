@@ -68,6 +68,7 @@ import { ElMessage } from 'element-plus'
 import { Loading, CircleClose } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import NavBar from '../components/NavBar.vue'
+import { API_BASE_URL, API_ENDPOINTS, buildUrl } from '../api/config'
 
 const router = useRouter()
 const loading = ref(false)
@@ -106,7 +107,7 @@ const fetchHistory = async () => {
       return
     }
     
-    const response = await axios.get('http://localhost:8080/api/profile/history', {
+    const response = await axios.get(buildUrl(API_ENDPOINTS.PROFILE.HISTORY), {
       headers: { 'Authorization': token }
     })
     

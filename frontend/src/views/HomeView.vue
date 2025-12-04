@@ -249,7 +249,7 @@ const submitForm = async () => {
     }
     
     // 请求 Java 后端进行分析（Java 后端会保存数据并调用 Python 后端）
-    const response = await axios.post('http://localhost:8080/api/profile/analyze', profileData, {
+    const response = await axios.post(buildUrl(API_ENDPOINTS.PROFILE.ANALYZE), profileData, {
       headers: { 'Authorization': token }
     })
     

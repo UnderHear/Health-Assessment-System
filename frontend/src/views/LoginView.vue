@@ -102,8 +102,6 @@ const loading = ref(false)
 const registerLoading = ref(false)
 const showRegister = ref(false)
 
-const API_BASE = 'http://localhost:8080/api'
-
 const loginForm = reactive({
   username: '',
   password: ''
@@ -161,7 +159,7 @@ const handleLogin = async () => {
     if (valid) {
       loading.value = true
       try {
-        const response = await axios.post(`${API_BASE}/auth/login`, loginForm)
+        const response = await axios.post(buildUrl(API_ENDPOINTS.AUTH.LOGIN), loginForm)
         
         if (response.data.code === 200) {
           // 保存 token 和用户信息
@@ -190,7 +188,7 @@ const handleRegister = async () => {
     if (valid) {
       registerLoading.value = true
       try {
-        const response = await axios.post(`${API_BASE}/auth/register`, {
+        const response = await axios.post(buildUrl(API_ENDPOINTS.AUTH.REGISTER), {
           username: registerForm.username,
           password: registerForm.password,
           realName: registerForm.realName,

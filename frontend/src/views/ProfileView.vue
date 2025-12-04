@@ -189,11 +189,11 @@ import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import axios from 'axios'
 import NavBar from '../components/NavBar.vue'
+import { API_BASE_URL, API_ENDPOINTS, buildUrl } from '../api/config'
 
 const userInfo = ref(null)
 const loading = ref(false)
 const saving = ref(false)
-const API_BASE = 'http://localhost:8080/api'
 
 const form = reactive({
   age: 30,
@@ -251,7 +251,7 @@ const fetchProfile = async () => {
   loading.value = true
   try {
     const token = localStorage.getItem('token')
-    const response = await axios.get(`${API_BASE}/profile`, {
+    const response = await axios.get(buildUrl(API_ENDPOINTS.PROFILE.GET), {
       headers: { Authorization: token }
     })
     
@@ -269,7 +269,7 @@ const saveProfile = async () => {
   saving.value = true
   try {
     const token = localStorage.getItem('token')
-    const response = await axios.post(`${API_BASE}/profile`, form, {
+    const response = await axios.post(buildUrl(API_ENDPOINTS.PROFILE.UPDATE), form, {
       headers: { Authorization: token }
     })
     
