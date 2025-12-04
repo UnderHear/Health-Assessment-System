@@ -159,6 +159,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import axios from 'axios'
 import NavBar from '../components/NavBar.vue'
+import { API_ENDPOINTS, buildUrl } from '../api/config'
 
 const router = useRouter()
 const loading = ref(false)

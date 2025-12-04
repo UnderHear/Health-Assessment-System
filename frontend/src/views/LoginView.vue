@@ -94,6 +94,7 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import axios from 'axios'
+import { API_ENDPOINTS, buildUrl } from '../api/config'
 
 const router = useRouter()
 const loginFormRef = ref(null)
