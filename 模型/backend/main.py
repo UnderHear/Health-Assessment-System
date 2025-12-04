@@ -99,11 +99,15 @@ async def analyze_physical_test(data: PhysicalTestRequest):
                 full_report += chunk
 
         return {
-            "overall_score": result.overall_score,
-            "overall_rating": result.overall_rating,
-            "report": full_report,
-            "individual_scores": result.individual_scores,
-            "individual_ratings": result.individual_ratings
+            "code": 200,
+            "message": "success",
+            "data": {
+                "overall_score": result.overall_score,
+                "overall_rating": result.overall_rating,
+                "report": full_report,
+                "individual_scores": result.individual_scores,
+                "individual_ratings": result.individual_ratings
+            }
         }
 
     except Exception as e:
