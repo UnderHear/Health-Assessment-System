@@ -11,50 +11,54 @@
           <el-empty description="暂无测试记录" />
         </div>
 
-        <el-row :gutter="20">
-          <el-col :xs="24" :sm="12" :lg="8" v-for="record in historyList" :key="record.id">
-            <el-card class="record-card" :class="{ 'disabled-card': record.status !== 'COMPLETED' }" @click="handleCardClick(record)">
-              <div class="card-header-section">
-                <div class="time-status">
-                  <div class="test-time">{{ formatDate(record.createTime) }}</div>
-                  <el-tag :type="getStatusType(record.status)" size="small">
-                    {{ getStatusText(record.status) }}
-                  </el-tag>
+        <div class="records-grid">
+          <el-card 
+            v-for="record in historyList" 
+            :key="record.id"
+            class="record-card" 
+            :class="{ 'disabled-card': record.status !== 'COMPLETED' }" 
+            @click="handleCardClick(record)"
+          >
+            <div class="card-header-section">
+              <div class="time-status">
+                <div class="test-time">{{ formatDate(record.createTime) }}</div>
+                <el-tag :type="getStatusType(record.status)" size="small">
+                  {{ getStatusText(record.status) }}
+                </el-tag>
+              </div>
+            </div>
+
+            <div v-if="record.status === 'COMPLETED'" class="card-content">
+              <div :ref="el => setChartRef(el, record.id)" class="mini-radar-chart"></div>
+              
+              <div class="score-info">
+                <div class="overall-score">
+                  <span class="score-value">{{ getOverallScore(record) }}</span>
+                  <span class="score-label">分</span>
                 </div>
+                <div class="rating-text">{{ getOverallRating(record) }}</div>
               </div>
 
-              <div v-if="record.status === 'COMPLETED'" class="card-content">
-                <div :ref="el => setChartRef(el, record.id)" class="mini-radar-chart"></div>
-                
-                <div class="score-info">
-                  <div class="overall-score">
-                    <span class="score-value">{{ getOverallScore(record) }}</span>
-                    <span class="score-label">分</span>
-                  </div>
-                  <div class="rating-text">{{ getOverallRating(record) }}</div>
-                </div>
+              <el-button type="primary" size="small" class="view-btn" @click.stop="viewDetail(record.id)">
+                查看详情
+              </el-button>
+            </div>
 
-                <el-button type="primary" size="small" class="view-btn" @click.stop="viewDetail(record.id)">
-                  查看详情
-                </el-button>
+            <div v-else class="card-content-placeholder">
+              <div class="status-icon">
+                <el-icon v-if="record.status === 'GENERATING'" :size="40" class="loading-icon">
+                  <Loading />
+                </el-icon>
+                <el-icon v-else-if="record.status === 'FAILED'" :size="40" class="error-icon">
+                  <CircleClose />
+                </el-icon>
               </div>
-
-              <div v-else class="card-content-placeholder">
-                <div class="status-icon">
-                  <el-icon v-if="record.status === 'GENERATING'" :size="40" class="loading-icon">
-                    <Loading />
-                  </el-icon>
-                  <el-icon v-else-if="record.status === 'FAILED'" :size="40" class="error-icon">
-                    <CircleClose />
-                  </el-icon>
-                </div>
-                <div class="status-text">
-                  {{ record.status === 'GENERATING' ? '报告生成中...' : '生成失败' }}
-                </div>
+              <div class="status-text">
+                {{ record.status === 'GENERATING' ? '报告生成中...' : '生成失败' }}
               </div>
-            </el-card>
-          </el-col>
-        </el-row>
+            </div>
+          </el-card>
+        </div>
       </div>
     </el-main>
   </div>
@@ -297,6 +301,11 @@ window.addEventListener('resize', () => {
 .records-container {
   min-height: 400px;
 }
+.records-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 20px;
+}
 .empty-state {
   display: flex;
   justify-content: center;
@@ -304,7 +313,6 @@ window.addEventListener('resize', () => {
   min-height: 300px;
 }
 .record-card {
-  margin-bottom: 20px;
   cursor: pointer;
   transition: all 0.3s;
   height: 100%;
