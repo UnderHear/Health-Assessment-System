@@ -48,7 +48,7 @@ public class UserProfileController {
         }
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{id:[0-9]+}")
     public Result<TestRecord> getProfileById(@PathVariable Long id) {
         try {
             TestRecord profile = testRecordService.getRecordById(id);

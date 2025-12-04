@@ -186,11 +186,13 @@
 
 <script setup>
 import { ref, reactive, onMounted, computed, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import axios from 'axios'
 import NavBar from '../components/NavBar.vue'
 import { API_BASE_URL, API_ENDPOINTS, buildUrl } from '../api/config'
 
+const router = useRouter()
 const userInfo = ref(null)
 const loading = ref(false)
 const saving = ref(false)
@@ -248,9 +250,14 @@ onMounted(async () => {
 })
 
 const fetchProfile = async () => {
+  const token = localStorage.getItem('token')
+  if (!token) {
+    router.push('/login')
+    return
+  }
+
   loading.value = true
   try {
-    const token = localStorage.getItem('token')
     const response = await axios.get(buildUrl(API_ENDPOINTS.PROFILE.GET), {
       headers: { Authorization: token }
     })
@@ -260,15 +267,25 @@ const fetchProfile = async () => {
     }
   } catch (error) {
     console.error('Failed to fetch profile', error)
+    if (error.response && error.response.status === 401) {
+      ElMessage.error('登录已过期，请重新登录')
+      router.push('/login')
+    }
   } finally {
     loading.value = false
   }
 }
 
 const saveProfile = async () => {
+  const token = localStorage.getItem('token')
+  if (!token) {
+    ElMessage.warning('请先登录')
+    router.push('/login')
+    return
+  }
+
   saving.value = true
   try {
-    const token = localStorage.getItem('token')
     const response = await axios.post(buildUrl(API_ENDPOINTS.PROFILE.UPDATE), form, {
       headers: { Authorization: token }
     })
