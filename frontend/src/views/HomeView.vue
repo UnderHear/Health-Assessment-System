@@ -43,6 +43,7 @@
               
               <el-form-item label="BMI (kg/m²)">
                 <el-input-number v-model="calculatedBMI" :min="10" :max="50" :precision="1" disabled />
+                <span class="unit-text">自动计算</span>
               </el-form-item>
               
               <el-form-item label="体脂率 (%)">
@@ -111,15 +112,31 @@
               
               <el-form-item label="运动偏好">
                 <el-checkbox-group v-model="form.exercise_preferences" :max="2">
-                  <el-checkbox label="健步走">健步走</el-checkbox>
-                  <el-checkbox label="慢跑">慢跑</el-checkbox>
+                  <el-checkbox label="健步">健步</el-checkbox>
+                  <el-checkbox label="跑步">跑步</el-checkbox>
+                  <el-checkbox label="骑车">骑车</el-checkbox>
+                  <el-checkbox label="力量练习">力量练习</el-checkbox>
+                  <el-checkbox label="乒羽网柔">乒羽网柔</el-checkbox>
+                  <el-checkbox label="足篮排">足篮排</el-checkbox>
+                  <el-checkbox label="健身路径">健身路径</el-checkbox>
                   <el-checkbox label="游泳">游泳</el-checkbox>
-                  <el-checkbox label="骑行">骑行</el-checkbox>
-                  <el-checkbox label="太极拳">太极拳</el-checkbox>
-                  <el-checkbox label="广场舞">广场舞</el-checkbox>
-                  <el-checkbox label="力量训练">力量训练</el-checkbox>
-                  <el-checkbox label="瑜伽">瑜伽</el-checkbox>
+                  <el-checkbox label="舞蹈">舞蹈</el-checkbox>
+                  <el-checkbox label="踢跳">踢跳</el-checkbox>
+                  <el-checkbox label="体操">体操</el-checkbox>
+                  <el-checkbox label="气功">气功</el-checkbox>
+                  <el-checkbox label="武术">武术</el-checkbox>
+                  <el-checkbox label="保龄地掷门球">保龄地掷门球</el-checkbox>
+                  <el-checkbox label="格斗">格斗</el-checkbox>
+                  <el-checkbox label="登山">登山</el-checkbox>
+                  <el-checkbox label="冰雪运动">冰雪运动</el-checkbox>
+                  <el-checkbox label="其他">其他</el-checkbox>
                 </el-checkbox-group>
+                <el-input
+                  v-if="form.exercise_preferences.includes('其他')"
+                  v-model="otherExercisePreference"
+                  placeholder="请输入其他运动偏好"
+                  class="other-input"
+                />
               </el-form-item>
               
               <el-form-item label="是否使用器械">
@@ -137,8 +154,19 @@
                 </el-select>
               </el-form-item>
               
-              <el-form-item label="疾病史">
-                <el-input v-model="diseasesInput" placeholder="多个疾病用逗号分隔" />
+              <el-form-item label="疾病相关">
+                <el-checkbox-group v-model="form.diseases">
+                  <el-checkbox label="高血压">高血压</el-checkbox>
+                  <el-checkbox label="血脂异常">血脂异常</el-checkbox>
+                  <el-checkbox label="糖尿病">糖尿病</el-checkbox>
+                  <el-checkbox label="心脏病">心脏病</el-checkbox>
+                  <el-checkbox label="消化系统疾病">消化系统疾病</el-checkbox>
+                  <el-checkbox label="关节疾病">关节疾病</el-checkbox>
+                  <el-checkbox label="呼吸系统疾病">呼吸系统疾病</el-checkbox>
+                  <el-checkbox label="职业病">职业病</el-checkbox>
+                  <el-checkbox label="骨质疏松">骨质疏松</el-checkbox>
+                  <el-checkbox label="不知道/无">不知道/无</el-checkbox>
+                </el-checkbox-group>
               </el-form-item>
 
               <el-form-item>
@@ -163,30 +191,30 @@ import { API_ENDPOINTS, buildUrl } from '../api/config'
 
 const router = useRouter()
 const loading = ref(false)
-const diseasesInput = ref('')
+const otherExercisePreference = ref('')
 
 const form = reactive({
-  age: 30,
-  gender: '男',
+  age: null,
+  gender: '',
   name: '',
-  height: 170,
-  weight: 65,
-  bmi: 22.5,
-  body_fat_rate: 18,
-  vital_capacity: 3500,
-  sit_and_reach: 10,
-  single_leg_stand: 30,
-  reaction_time: 0.4,
-  grip_strength: 40,
-  max_oxygen_uptake: 35,
-  sit_ups_per_minute: 30,
-  push_ups: 20,
-  vertical_jump: 40,
+  height: null,
+  weight: null,
+  bmi: null,
+  body_fat_rate: null,
+  vital_capacity: null,
+  sit_and_reach: null,
+  single_leg_stand: null,
+  reaction_time: null,
+  grip_strength: null,
+  max_oxygen_uptake: null,
+  sit_ups_per_minute: null,
+  push_ups: null,
+  vertical_jump: null,
   high_knees_2min: null,
   sit_to_stand_30s: null,
   exercise_preferences: [],
-  uses_equipment: false,
-  exercise_risk_level: '低',
+  uses_equipment: null,
+  exercise_risk_level: '',
   diseases: []
 })
 
@@ -195,7 +223,7 @@ const calculatedBMI = computed(() => {
     const heightInMeters = form.height / 100
     return Number((form.weight / (heightInMeters * heightInMeters)).toFixed(1))
   }
-  return 0
+  return null
 })
 
 // Watch for BMI changes to update form.bmi
@@ -208,8 +236,13 @@ const handleAgeChange = (val) => {
 }
 
 const submitForm = async () => {
-  if (form.exercise_preferences.length !== 2) {
-    ElMessage.warning('请选择且只选择2项运动偏好')
+  if (form.exercise_preferences.length === 0) {
+    ElMessage.warning('请选择1-2项运动偏好')
+    return
+  }
+
+  if (form.exercise_preferences.includes('其他') && !otherExercisePreference.value.trim()) {
+    ElMessage.warning('请填写其他运动偏好内容')
     return
   }
   
@@ -222,7 +255,6 @@ const submitForm = async () => {
 
   loading.value = true
   try {
-    form.diseases = diseasesInput.value ? diseasesInput.value.split(/[,，]/).map(s => s.trim()).filter(s => s) : []
     
     // 构建符合 Java 后端 UserProfile 实体的驼峰格式数据
     const profileData = {
@@ -243,7 +275,12 @@ const submitForm = async () => {
       verticalJump: form.vertical_jump,
       highKnees2min: form.high_knees_2min,
       sitToStand30s: form.sit_to_stand_30s,
-      exercisePreferences: form.exercise_preferences.join(','),
+      exercisePreferences: form.exercise_preferences.map(pref => {
+        if (pref === '其他') {
+          return otherExercisePreference.value ? `其他(${otherExercisePreference.value.trim()})` : '其他'
+        }
+        return pref
+      }).join(','),
       usesEquipment: form.uses_equipment,
       exerciseRiskLevel: form.exercise_risk_level,
       diseases: form.diseases.join(',')
@@ -274,30 +311,30 @@ const submitForm = async () => {
 }
 
 const resetForm = () => {
-  // Reset form to default values
-  form.age = 30
-  form.gender = '男'
+  // Reset form to empty values
+  form.age = null
+  form.gender = ''
   form.name = ''
-  form.height = 170
-  form.weight = 65
-  form.bmi = 22.5
-  form.body_fat_rate = 18
-  form.vital_capacity = 3500
-  form.sit_and_reach = 10
-  form.single_leg_stand = 30
-  form.reaction_time = 0.4
-  form.grip_strength = 40
-  form.max_oxygen_uptake = 35
-  form.sit_ups_per_minute = 30
-  form.push_ups = 20
-  form.vertical_jump = 40
+  form.height = null
+  form.weight = null
+  form.bmi = null
+  form.body_fat_rate = null
+  form.vital_capacity = null
+  form.sit_and_reach = null
+  form.single_leg_stand = null
+  form.reaction_time = null
+  form.grip_strength = null
+  form.max_oxygen_uptake = null
+  form.sit_ups_per_minute = null
+  form.push_ups = null
+  form.vertical_jump = null
   form.high_knees_2min = null
   form.sit_to_stand_30s = null
   form.exercise_preferences = []
-  form.uses_equipment = false
-  form.exercise_risk_level = '低'
+  form.uses_equipment = null
+  form.exercise_risk_level = ''
   form.diseases = []
-  diseasesInput.value = ''
+  otherExercisePreference.value = ''
 }
 </script>
 
@@ -466,5 +503,9 @@ const resetForm = () => {
 }
 .empty-state {
   padding: 60px 0;
+}
+.other-input {
+  margin-top: 10px;
+  max-width: 240px;
 }
 </style>
