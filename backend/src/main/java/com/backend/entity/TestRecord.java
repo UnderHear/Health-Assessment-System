@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 public class TestRecord {
     private Long id;
     private Long userId;
+    private String name;
     private Integer age;
     private String gender;
     private Double height;

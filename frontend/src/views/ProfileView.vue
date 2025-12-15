@@ -53,7 +53,7 @@
                 </el-col>
                 <el-col :span="12">
                   <el-form-item label="体重 (kg)">
-                    <el-input-number v-model="form.weight" :min="20" :max="200" :precision="1" />
+                    <el-input-number v-model="form.weight" :min="10" :max="250" :precision="1" />
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -62,6 +62,7 @@
                 <el-col :span="12">
                   <el-form-item label="BMI (kg/m²)">
                     <el-input-number v-model="calculatedBMI" :min="10" :max="50" :precision="1" disabled />
+                    <span class="unit-text">自动计算</span>
                   </el-form-item>
                 </el-col>
                 <el-col :span="12">
@@ -81,7 +82,7 @@
                 </el-col>
                 <el-col :span="12">
                   <el-form-item label="坐位体前屈 (cm)">
-                    <el-input-number v-model="form.sitAndReach" :min="-30" :max="50" :precision="1" />
+                    <el-input-number v-model="form.sitAndReach" :min="-30" :max="60" :precision="1" />
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -89,7 +90,7 @@
               <el-row>
                 <el-col :span="12">
                   <el-form-item label="闭眼单脚站立 (s)">
-                    <el-input-number v-model="form.singleLegStand" :min="0" :max="300" />
+                    <el-input-number v-model="form.singleLegStand" :min="0" :max="300" :precision="1" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="12">
@@ -102,7 +103,7 @@
               <el-row>
                 <el-col :span="12">
                   <el-form-item label="握力 (kg)">
-                    <el-input-number v-model="form.gripStrength" :min="0" :max="100" :precision="1" />
+                    <el-input-number v-model="form.gripStrength" :min="0" :max="150" :precision="1" />
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -146,16 +147,36 @@
               <el-divider content-position="left">其他信息</el-divider>
               
               <el-form-item label="运动偏好">
-                <el-checkbox-group v-model="exercisePreferencesList" :max="2">
-                  <el-checkbox label="健步走">健步走</el-checkbox>
-                  <el-checkbox label="慢跑">慢跑</el-checkbox>
+                <el-checkbox-group
+                  v-model="exercisePreferencesSelected"
+                  :max="2"
+                  @change="handleExercisePreferencesChange"
+                >
+                  <el-checkbox label="健步">健步</el-checkbox>
+                  <el-checkbox label="跑步">跑步</el-checkbox>
+                  <el-checkbox label="骑车">骑车</el-checkbox>
+                  <el-checkbox label="力量练习">力量练习</el-checkbox>
+                  <el-checkbox label="乒羽网柔">乒羽网柔</el-checkbox>
+                  <el-checkbox label="足篮排">足篮排</el-checkbox>
+                  <el-checkbox label="健身路径">健身路径</el-checkbox>
                   <el-checkbox label="游泳">游泳</el-checkbox>
-                  <el-checkbox label="骑行">骑行</el-checkbox>
-                  <el-checkbox label="太极拳">太极拳</el-checkbox>
-                  <el-checkbox label="广场舞">广场舞</el-checkbox>
-                  <el-checkbox label="力量训练">力量训练</el-checkbox>
-                  <el-checkbox label="瑜伽">瑜伽</el-checkbox>
+                  <el-checkbox label="舞蹈">舞蹈</el-checkbox>
+                  <el-checkbox label="踢跳">踢跳</el-checkbox>
+                  <el-checkbox label="体操">体操</el-checkbox>
+                  <el-checkbox label="气功">气功</el-checkbox>
+                  <el-checkbox label="武术">武术</el-checkbox>
+                  <el-checkbox label="保龄地掷门球">保龄地掷门球</el-checkbox>
+                  <el-checkbox label="格斗">格斗</el-checkbox>
+                  <el-checkbox label="登山">登山</el-checkbox>
+                  <el-checkbox label="冰雪运动">冰雪运动</el-checkbox>
+                  <el-checkbox label="其他">其他</el-checkbox>
                 </el-checkbox-group>
+                <el-input
+                  v-if="exercisePreferencesSelected.includes('其他')"
+                  v-model="otherExercisePreference"
+                  placeholder="请输入其他运动偏好"
+                  class="other-input"
+                />
               </el-form-item>
               
               <el-form-item label="是否使用器械">
@@ -173,8 +194,19 @@
                 </el-select>
               </el-form-item>
               
-              <el-form-item label="疾病史">
-                <el-input v-model="form.diseases" type="textarea" rows="2" placeholder="如有疾病史请填写，多个疾病用逗号分隔" />
+              <el-form-item label="疾病相关">
+                <el-checkbox-group v-model="form.diseases">
+                  <el-checkbox label="高血压">高血压</el-checkbox>
+                  <el-checkbox label="血脂异常">血脂异常</el-checkbox>
+                  <el-checkbox label="糖尿病">糖尿病</el-checkbox>
+                  <el-checkbox label="心脏病">心脏病</el-checkbox>
+                  <el-checkbox label="消化系统疾病">消化系统疾病</el-checkbox>
+                  <el-checkbox label="关节疾病">关节疾病</el-checkbox>
+                  <el-checkbox label="呼吸系统疾病">呼吸系统疾病</el-checkbox>
+                  <el-checkbox label="职业病">职业病</el-checkbox>
+                  <el-checkbox label="骨质疏松">骨质疏松</el-checkbox>
+                  <el-checkbox label="不知道/无">不知道/无</el-checkbox>
+                </el-checkbox-group>
               </el-form-item>
             </el-form>
           </el-card>
@@ -190,35 +222,67 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import axios from 'axios'
 import NavBar from '../components/NavBar.vue'
-import { API_BASE_URL, API_ENDPOINTS, buildUrl } from '../api/config'
+import { API_ENDPOINTS, buildUrl } from '../api/config'
 
 const router = useRouter()
 const userInfo = ref(null)
 const loading = ref(false)
 const saving = ref(false)
+const otherExercisePreference = ref('')
+const exercisePreferencesSelected = ref([])
+
+const EXERCISE_PREFERENCE_OPTIONS = [
+  '健步',
+  '跑步',
+  '骑车',
+  '力量练习',
+  '乒羽网柔',
+  '足篮排',
+  '健身路径',
+  '游泳',
+  '舞蹈',
+  '踢跳',
+  '体操',
+  '气功',
+  '武术',
+  '保龄地掷门球',
+  '格斗',
+  '登山',
+  '冰雪运动',
+  '其他'
+]
+const EXERCISE_PREFERENCE_SET = new Set(EXERCISE_PREFERENCE_OPTIONS)
+const LEGACY_EXERCISE_PREFERENCE_MAP = {
+  健步走: '健步',
+  慢跑: '跑步',
+  骑行: '骑车',
+  力量训练: '力量练习',
+  广场舞: '舞蹈',
+  太极拳: '武术',
+  瑜伽: '乒羽网柔'
+}
 
 const form = reactive({
-  age: 30,
-  gender: '男',
-  height: 170,
-  weight: 65,
-  bmi: 22.5,
-  bodyFatRate: 18,
-  vitalCapacity: 3500,
-  sitAndReach: 10,
-  singleLegStand: 30,
-  reactionTime: 0.4,
-  gripStrength: 40,
+  age: null,
+  gender: '',
+  height: null,
+  weight: null,
+  bmi: null,
+  bodyFatRate: null,
+  vitalCapacity: null,
+  sitAndReach: null,
+  singleLegStand: null,
+  reactionTime: null,
+  gripStrength: null,
   maxOxygenUptake: null,
   sitUpsPerMinute: null,
   pushUps: null,
   verticalJump: null,
   highKnees2min: null,
   sitToStand30s: null,
-  exercisePreferences: '',
-  usesEquipment: false,
-  exerciseRiskLevel: '低',
-  diseases: ''
+  usesEquipment: null,
+  exerciseRiskLevel: '',
+  diseases: []
 })
 
 const calculatedBMI = computed(() => {
@@ -226,19 +290,12 @@ const calculatedBMI = computed(() => {
     const heightInMeters = form.height / 100
     return Number((form.weight / (heightInMeters * heightInMeters)).toFixed(1))
   }
-  return 0
+  return null
 })
 
 // Watch for BMI changes to update form.bmi
 watch(calculatedBMI, (newVal) => {
   form.bmi = newVal
-})
-
-const exercisePreferencesList = computed({
-  get: () => form.exercisePreferences ? form.exercisePreferences.split(',') : [],
-  set: (val) => {
-    form.exercisePreferences = val.join(',')
-  }
 })
 
 onMounted(async () => {
@@ -248,6 +305,159 @@ onMounted(async () => {
     await fetchProfile()
   }
 })
+
+const saveProfile = async () => {
+  const token = localStorage.getItem('token')
+  if (!token) {
+    ElMessage.warning('请先登录')
+    router.push('/login')
+    return
+  }
+
+  if (exercisePreferencesSelected.value.length === 0) {
+    ElMessage.warning('请选择1-2项运动偏好')
+    return
+  }
+
+  if (exercisePreferencesSelected.value.includes('其他') && !otherExercisePreference.value.trim()) {
+    ElMessage.warning('请填写其他运动偏好内容')
+    return
+  }
+
+  saving.value = true
+  try {
+    const payload = buildPayload()
+    const response = await axios.post(buildUrl(API_ENDPOINTS.PROFILE.UPDATE), payload, {
+      headers: { Authorization: token }
+    })
+    
+    if (response.data.code === 200) {
+      ElMessage.success('保存成功')
+    } else {
+      ElMessage.error(response.data.message || '保存失败')
+    }
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('保存失败')
+  } finally {
+    saving.value = false
+  }
+}
+
+function parseExercisePreferences(value) {
+  if (!value) {
+    otherExercisePreference.value = ''
+    return []
+  }
+  const listSource = Array.isArray(value) ? value : value.split(/[,，]/)
+  const list = listSource.map((item) => String(item).trim()).filter((item) => item)
+  const result = []
+  otherExercisePreference.value = ''
+
+  list.forEach((raw) => {
+    const match = raw.match(/^其他\((.*)\)$/)
+    if (match) {
+      if (!result.includes('其他')) result.push('其他')
+      otherExercisePreference.value = match[1]
+      return
+    }
+
+    const mapped = LEGACY_EXERCISE_PREFERENCE_MAP[raw] || raw
+    if (EXERCISE_PREFERENCE_SET.has(mapped)) {
+      if (!result.includes(mapped)) result.push(mapped)
+      return
+    }
+
+    if (!result.includes('其他')) result.push('其他')
+    if (!otherExercisePreference.value) {
+      otherExercisePreference.value = raw
+    } else if (!otherExercisePreference.value.includes(raw)) {
+      otherExercisePreference.value = `${otherExercisePreference.value}、${raw}`
+    }
+  })
+
+  return result.slice(0, 2)
+}
+
+function parseDiseases(value) {
+  if (!value) return []
+  const listSource = Array.isArray(value) ? value : value.split(/[,，]/)
+  return listSource.map((item) => String(item).trim()).filter((item) => item)
+}
+
+function sanitizeExercisePreferences(value) {
+  const list = Array.isArray(value) ? value : []
+  const filtered = list
+    .map((item) => String(item).trim())
+    .filter((item) => item && EXERCISE_PREFERENCE_SET.has(item))
+  return Array.from(new Set(filtered)).slice(0, 2)
+}
+
+function handleExercisePreferencesChange(val) {
+  const sanitized = sanitizeExercisePreferences(val)
+  if (Array.isArray(val) && val.length > 2) {
+    ElMessage.warning('最多选择2项运动偏好')
+  }
+  exercisePreferencesSelected.value = sanitized
+}
+
+function populateForm(data) {
+  form.age = data.age ?? null
+  form.gender = data.gender ?? ''
+  form.height = data.height ?? null
+  form.weight = data.weight ?? null
+  form.bmi = data.bmi ?? null
+  form.bodyFatRate = data.bodyFatRate ?? null
+  form.vitalCapacity = data.vitalCapacity ?? null
+  form.sitAndReach = data.sitAndReach ?? null
+  form.singleLegStand = data.singleLegStand ?? null
+  form.reactionTime = data.reactionTime ?? null
+  form.gripStrength = data.gripStrength ?? null
+  form.maxOxygenUptake = data.maxOxygenUptake ?? null
+  form.sitUpsPerMinute = data.sitUpsPerMinute ?? null
+  form.pushUps = data.pushUps ?? null
+  form.verticalJump = data.verticalJump ?? null
+  form.highKnees2min = data.highKnees2min ?? null
+  form.sitToStand30s = data.sitToStand30s ?? null
+  exercisePreferencesSelected.value = sanitizeExercisePreferences(parseExercisePreferences(data.exercisePreferences))
+  form.usesEquipment = data.usesEquipment === null || data.usesEquipment === undefined ? null : Boolean(data.usesEquipment)
+  form.exerciseRiskLevel = data.exerciseRiskLevel ?? ''
+  form.diseases = parseDiseases(data.diseases)
+}
+
+function buildPayload() {
+  const selected = Array.isArray(exercisePreferencesSelected.value) ? exercisePreferencesSelected.value : []
+  const exercisePreferences = selected.map((pref) => {
+    if (pref === '其他') {
+      return otherExercisePreference.value ? `其他(${otherExercisePreference.value.trim()})` : '其他'
+    }
+    return pref
+  }).join(',')
+
+  return {
+    age: form.age,
+    gender: form.gender,
+    height: form.height,
+    weight: form.weight,
+    bmi: form.bmi,
+    bodyFatRate: form.bodyFatRate,
+    vitalCapacity: form.vitalCapacity,
+    sitAndReach: form.sitAndReach,
+    singleLegStand: form.singleLegStand,
+    reactionTime: form.reactionTime,
+    gripStrength: form.gripStrength,
+    maxOxygenUptake: form.maxOxygenUptake,
+    sitUpsPerMinute: form.sitUpsPerMinute,
+    pushUps: form.pushUps,
+    verticalJump: form.verticalJump,
+    highKnees2min: form.highKnees2min,
+    sitToStand30s: form.sitToStand30s,
+    exercisePreferences,
+    usesEquipment: form.usesEquipment,
+    exerciseRiskLevel: form.exerciseRiskLevel,
+    diseases: form.diseases.join(',')
+  }
+}
 
 const fetchProfile = async () => {
   const token = localStorage.getItem('token')
@@ -263,7 +473,7 @@ const fetchProfile = async () => {
     })
     
     if (response.data.code === 200 && response.data.data) {
-      Object.assign(form, response.data.data)
+      populateForm(response.data.data)
     }
   } catch (error) {
     console.error('Failed to fetch profile', error)
@@ -273,33 +483,6 @@ const fetchProfile = async () => {
     }
   } finally {
     loading.value = false
-  }
-}
-
-const saveProfile = async () => {
-  const token = localStorage.getItem('token')
-  if (!token) {
-    ElMessage.warning('请先登录')
-    router.push('/login')
-    return
-  }
-
-  saving.value = true
-  try {
-    const response = await axios.post(buildUrl(API_ENDPOINTS.PROFILE.UPDATE), form, {
-      headers: { Authorization: token }
-    })
-    
-    if (response.data.code === 200) {
-      ElMessage.success('保存成功')
-    } else {
-      ElMessage.error(response.data.message || '保存失败')
-    }
-  } catch (error) {
-    console.error(error)
-    ElMessage.error('保存失败')
-  } finally {
-    saving.value = false
   }
 }
 </script>
@@ -321,5 +504,9 @@ const saveProfile = async () => {
 .unit-text {
   margin-left: 10px;
     color: #909399;
+}
+.other-input {
+  margin-top: 10px;
+  max-width: 240px;
 }
 </style>

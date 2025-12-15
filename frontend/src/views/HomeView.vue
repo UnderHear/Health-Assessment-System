@@ -9,6 +9,7 @@
             <template #header>
               <div class="card-header">
                 <span>体质测试数据录入</span>
+                <el-button size="small" @click="applyProfileTemplate">使用个人信息模板</el-button>
               </div>
             </template>
             
@@ -27,7 +28,7 @@
                 </el-radio-group>
               </el-form-item>
 
-              <el-form-item label="姓名">
+              <el-form-item label="姓名" required>
                 <el-input v-model="form.name" placeholder="请输入姓名" />
               </el-form-item>
 
@@ -218,6 +219,94 @@ const form = reactive({
   diseases: []
 })
 
+const EXERCISE_PREFERENCE_OPTIONS = [
+  '健步',
+  '跑步',
+  '骑车',
+  '力量练习',
+  '乒羽网柔',
+  '足篮排',
+  '健身路径',
+  '游泳',
+  '舞蹈',
+  '踢跳',
+  '体操',
+  '气功',
+  '武术',
+  '保龄地掷门球',
+  '格斗',
+  '登山',
+  '冰雪运动',
+  '其他'
+]
+const EXERCISE_PREFERENCE_SET = new Set(EXERCISE_PREFERENCE_OPTIONS)
+const LEGACY_EXERCISE_PREFERENCE_MAP = {
+  健步走: '健步',
+  慢跑: '跑步',
+  骑行: '骑车',
+  力量训练: '力量练习',
+  广场舞: '舞蹈',
+  太极拳: '武术',
+  瑜伽: '乒羽网柔'
+}
+
+const DISEASE_OPTIONS = [
+  '高血压',
+  '血脂异常',
+  '糖尿病',
+  '心脏病',
+  '消化系统疾病',
+  '关节疾病',
+  '呼吸系统疾病',
+  '职业病',
+  '骨质疏松',
+  '不知道/无'
+]
+const DISEASE_SET = new Set(DISEASE_OPTIONS)
+
+function parseExercisePreferences(value) {
+  if (!value) {
+    otherExercisePreference.value = ''
+    return []
+  }
+  const listSource = Array.isArray(value) ? value : String(value).split(/[,，]/)
+  const list = listSource.map((item) => String(item).trim()).filter((item) => item)
+  const result = []
+  otherExercisePreference.value = ''
+
+  list.forEach((raw) => {
+    const match = raw.match(/^其他\((.*)\)$/)
+    if (match) {
+      if (!result.includes('其他')) result.push('其他')
+      otherExercisePreference.value = match[1]
+      return
+    }
+
+    const mapped = LEGACY_EXERCISE_PREFERENCE_MAP[raw] || raw
+    if (EXERCISE_PREFERENCE_SET.has(mapped)) {
+      if (!result.includes(mapped)) result.push(mapped)
+      return
+    }
+
+    if (!result.includes('其他')) result.push('其他')
+    if (!otherExercisePreference.value) {
+      otherExercisePreference.value = raw
+    } else if (!otherExercisePreference.value.includes(raw)) {
+      otherExercisePreference.value = `${otherExercisePreference.value}、${raw}`
+    }
+  })
+
+  return result.slice(0, 2)
+}
+
+function sanitizeDiseases(value) {
+  if (!value) return []
+  const listSource = Array.isArray(value) ? value : String(value).split(/[,，]/)
+  const list = listSource.map((item) => String(item).trim()).filter((item) => item)
+  const filtered = list.filter((item) => DISEASE_SET.has(item))
+  return Array.from(new Set(filtered))
+}
+
 const calculatedBMI = computed(() => {
   if (form.height && form.weight) {
     const heightInMeters = form.height / 100
@@ -235,7 +324,73 @@ const handleAgeChange = (val) => {
   // Reset age-specific fields if needed
 }
 
+const applyProfileTemplate = async () => {
+  const token = localStorage.getItem('token')
+  if (!token) {
+    ElMessage.warning('请先登录')
+    router.push('/login')
+    return
+  }
+
+  try {
+    const storedUserInfo = localStorage.getItem('userInfo')
+    if (storedUserInfo && !form.name) {
+      const parsedUserInfo = JSON.parse(storedUserInfo)
+      if (parsedUserInfo?.realName) {
+        form.name = parsedUserInfo.realName
+      }
+    }
+
+    const response = await axios.get(buildUrl(API_ENDPOINTS.PROFILE.GET), {
+      headers: { Authorization: token }
+    })
+
+    if (response.data.code !== 200) {
+      throw new Error(response.data.message || '获取身体档案失败')
+    }
+
+    const data = response.data.data
+    if (!data) {
+      ElMessage.warning('未填写身体档案，请前往个人信息页面填写')
+      router.push('/profile')
+      return
+    }
+
+    form.age = data.age ?? null
+    form.gender = data.gender ?? ''
+    form.height = data.height ?? null
+    form.weight = data.weight ?? null
+    form.bmi = data.bmi ?? null
+    form.body_fat_rate = data.bodyFatRate ?? null
+    form.vital_capacity = data.vitalCapacity ?? null
+    form.sit_and_reach = data.sitAndReach ?? null
+    form.single_leg_stand = data.singleLegStand ?? null
+    form.reaction_time = data.reactionTime ?? null
+    form.grip_strength = data.gripStrength ?? null
+    form.max_oxygen_uptake = data.maxOxygenUptake ?? null
+    form.sit_ups_per_minute = data.sitUpsPerMinute ?? null
+    form.push_ups = data.pushUps ?? null
+    form.vertical_jump = data.verticalJump ?? null
+    form.high_knees_2min = data.highKnees2min ?? null
+    form.sit_to_stand_30s = data.sitToStand30s ?? null
+    form.exercise_preferences = parseExercisePreferences(data.exercisePreferences)
+    form.uses_equipment = data.usesEquipment === null || data.usesEquipment === undefined ? null : Boolean(data.usesEquipment)
+    form.exercise_risk_level = data.exerciseRiskLevel ?? ''
+    form.diseases = sanitizeDiseases(data.diseases)
+
+    ElMessage.success('已填入身体档案数据')
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('获取身体档案失败: ' + (error.response?.data?.message || error.message))
+  }
+}
+
 const submitForm = async () => {
+  if (!form.name || !String(form.name).trim()) {
+    ElMessage.warning('请填写姓名')
+    return
+  }
+
   if (form.exercise_preferences.length === 0) {
     ElMessage.warning('请选择1-2项运动偏好')
     return
@@ -258,6 +413,7 @@ const submitForm = async () => {
     
     // 构建符合 Java 后端 UserProfile 实体的驼峰格式数据
     const profileData = {
+      name: form.name,
       age: form.age,
       gender: form.gender,
       height: form.height,

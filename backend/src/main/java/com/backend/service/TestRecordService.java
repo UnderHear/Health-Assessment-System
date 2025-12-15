@@ -33,6 +33,12 @@ public class TestRecordService {
 
     public Map<String, Object> analyzeRecord(TestRecord record) {
         // 1. Insert new record with status GENERATING
+        if (record.getName() != null) {
+            record.setName(record.getName().trim());
+        }
+        if (record.getName() == null || record.getName().isEmpty()) {
+            record.setName("User");
+        }
         record.setId(null); // Ensure new record
         record.setCreateTime(LocalDateTime.now());
         record.setUpdateTime(LocalDateTime.now());
@@ -59,7 +65,8 @@ public class TestRecordService {
             requestData.put("vertical_jump", record.getVerticalJump());
             requestData.put("high_knees_2min", record.getHighKnees2min());
             requestData.put("sit_to_stand_30s", record.getSitToStand30s());
-            requestData.put("name", "User"); // Default name
+            String userName = record.getName();
+            requestData.put("name", (userName != null && !userName.isEmpty()) ? userName : "User");
 
             // Handle lists (stored as comma-separated strings in DB/Entity)
             if (record.getExercisePreferences() != null && !record.getExercisePreferences().isEmpty()) {
