@@ -172,7 +172,7 @@
               <el-option
                 v-for="record in completedRecords"
                 :key="record.id"
-                :label="formatDate(record.createTime)"
+                :label="formatDateTimeSeconds(record.createTime)"
                 :value="record.id"
               />
             </el-select>
@@ -470,6 +470,13 @@ const formatDate = (dateStr) => {
 const formatDateTime = (dateStr) => {
   if (!dateStr) return ''
   return new Date(dateStr).toLocaleString('zh-CN')
+}
+
+const formatDateTimeSeconds = (dateStr) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ` +
+    `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`
 }
 
 const isToday = (date) => {

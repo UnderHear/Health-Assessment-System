@@ -20,139 +20,203 @@
           </template>
           
           <div class="report-content">
-            <!-- 1. 综合概览 -->
-            <div class="overview-section">
-              <el-row :gutter="20" align="middle">
-                <el-col :span="10">
-                  <div ref="radarChartRef" class="radar-chart"></div>
-                </el-col>
-                <el-col :span="14">
-                  <div class="score-summary">
-                    <h3 class="section-title">体质测试总评</h3>
-                    <div class="score-circle">
-                      <el-progress 
-                        type="dashboard" 
-                        :percentage="result.overall_score" 
-                        :color="getScoreColor"
-                        :width="180"
-                        :stroke-width="15"
-                      >
-                        <template #default="{ percentage }">
-                          <span class="percentage-value">{{ percentage }}</span>
-                          <span class="percentage-label">分</span>
-                        </template>
-                      </el-progress>
+
+            <!-- 1. 综合概述，各项指标详细评分 -->
+            <div v-if="currentPart === 1">
+              <div class="overview-section">
+                <el-row :gutter="20" align="middle">
+                  <el-col :span="10">
+                    <div ref="radarChartRef" class="radar-chart"></div>
+                  </el-col>
+                  <el-col :span="14">
+                    <div class="score-summary">
+                      <h3 class="section-title">体质测试总评</h3>
+                      <div class="score-circle">
+                        <el-progress 
+                          type="dashboard" 
+                          :percentage="result.overall_score" 
+                          :color="getScoreColor"
+                          :width="180"
+                          :stroke-width="15"
+                        >
+                          <template #default="{ percentage }">
+                            <span class="percentage-value">{{ percentage }}</span>
+                            <span class="percentage-label">分</span>
+                          </template>
+                        </el-progress>
+                      </div>
+                      <div class="rating-badge">
+                        <el-tag :type="getRatingType(result.overall_rating)" effect="dark" size="large" class="rating-tag">
+                          {{ result.overall_rating }}
+                        </el-tag>
+                      </div>
                     </div>
-                    <div class="rating-badge">
-                      <el-tag :type="getRatingType(result.overall_rating)" effect="dark" size="large" class="rating-tag">
-                        {{ result.overall_rating }}
-                      </el-tag>
-                    </div>
-                  </div>
-                </el-col>
-              </el-row>
+                  </el-col>
+                </el-row>
+              </div>
+
+              <el-divider><span class="divider-title">各项指标详细评分</span></el-divider>
+
+              <el-table :data="metricsTableData" style="width: 100%" stripe border size="default" class="metrics-table">
+                <el-table-column prop="name" label="指标" width="160">
+                  <template #default="scope">
+                    <span class="metric-name">{{ scope.row.name }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="value" label="测试值" width="120" align="center">
+                  <template #default="scope">
+                    {{ scope.row.value }}
+                  </template>
+                </el-table-column>
+                <el-table-column prop="score" label="得分" width="100" align="center">
+                  <template #default="scope">
+                    <span class="metric-score" :style="{ color: getScoreColor(scope.row.score) }">{{ scope.row.score }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="评分进度" min-width="200">
+                  <template #default="scope">
+                    <el-progress 
+                      :percentage="scope.row.score" 
+                      :color="getScoreColor(scope.row.score)" 
+                      :format="() => ''"
+                      :stroke-width="12"
+                    />
+                  </template>
+                </el-table-column>
+                <el-table-column prop="rating" label="等级" width="120" align="center">
+                  <template #default="scope">
+                    <el-tag :type="getRatingType(scope.row.rating)" effect="plain">{{ scope.row.rating }}</el-tag>
+                  </template>
+                </el-table-column>
+              </el-table>
             </div>
 
-            <el-divider><span class="divider-title">各项指标详细评分</span></el-divider>
+            <!-- 2. 体质分析总结，各项指标评价，运动处方目标 -->
+            <div v-else-if="currentPart === 2">
+              <el-divider><span class="divider-title">运动处方建议</span></el-divider>
 
-            <!-- 2. 指标详情表格 -->
-            <el-table :data="metricsTableData" style="width: 100%" stripe border size="default" class="metrics-table">
-              <el-table-column prop="name" label="指标" width="160">
-                <template #default="scope">
-                  <span class="metric-name">{{ scope.row.name }}</span>
-                </template>
-              </el-table-column>
-              <el-table-column prop="value" label="测试值" width="120" align="center">
-                <template #default="scope">
-                  {{ scope.row.value }}
-                </template>
-              </el-table-column>
-              <el-table-column prop="score" label="得分" width="100" align="center">
-                <template #default="scope">
-                  <span class="metric-score" :style="{ color: getScoreColor(scope.row.score) }">{{ scope.row.score }}</span>
-                </template>
-              </el-table-column>
-              <el-table-column label="评分进度" min-width="200">
-                <template #default="scope">
-                  <el-progress 
-                    :percentage="scope.row.score" 
-                    :color="getScoreColor(scope.row.score)" 
-                    :format="() => ''"
-                    :stroke-width="12"
-                  />
-                </template>
-              </el-table-column>
-              <el-table-column prop="rating" label="等级" width="120" align="center">
-                <template #default="scope">
-                  <el-tag :type="getRatingType(scope.row.rating)" effect="plain">{{ scope.row.rating }}</el-tag>
-                </template>
-              </el-table-column>
-            </el-table>
+              <div class="markdown-content">
+                <div v-if="parsedReport.intro" class="md-body intro-text" v-html="renderMarkdown(parsedReport.intro)"></div>
 
-            <el-divider><span class="divider-title">运动处方建议</span></el-divider>
+                <div class="section-block" v-if="parsedReport.summary">
+                  <h3 class="section-title">一、体质分析总结</h3>
+                  <div class="md-body" v-html="renderMarkdown(parsedReport.summary)"></div>
+                </div>
 
-            <!-- 3. 报告文本内容 -->
-            <div class="markdown-content">
-              <!-- Intro -->
-              <div v-if="parsedReport.intro" class="md-body intro-text" v-html="renderMarkdown(parsedReport.intro)"></div>
+                <div class="section-block" v-if="parsedReport.evaluation">
+                  <h3 class="section-title">二、各项指标评价</h3>
+                  <div class="md-body" v-html="renderMarkdown(parsedReport.evaluation)"></div>
+                </div>
 
-              <!-- 摘要 -->
-              <div class="section-block" v-if="parsedReport.summary">
-                <h3 class="section-title">一、体质分析总结</h3>
-                <div class="md-body" v-html="renderMarkdown(parsedReport.summary)"></div>
+                <div class="section-block" v-if="parsedReport.goals">
+                  <h3 class="section-title">三、运动处方目标</h3>
+                  <div class="md-body" v-html="renderMarkdown(parsedReport.goals)"></div>
+                </div>
               </div>
+            </div>
 
-              <!-- Evaluation -->
-              <div class="section-block" v-if="parsedReport.evaluation">
-                <h3 class="section-title">二、各项指标评价</h3>
-                <div class="md-body" v-html="renderMarkdown(parsedReport.evaluation)"></div>
-              </div>
+            <!-- 3. 分阶段训练周计划，运动禁忌，进度监测和营养建议 -->
+            <div v-else>
+              <el-divider><span class="divider-title">运动处方建议</span></el-divider>
 
-              <!-- 目标 -->
-              <div class="section-block" v-if="parsedReport.goals">
-                <h3 class="section-title">三、运动处方目标</h3>
-                <div class="md-body" v-html="renderMarkdown(parsedReport.goals)"></div>
-              </div>
+              <div class="markdown-content">
+                <div class="section-block" v-if="parsedReport.plan">
+                  <h3 class="section-title">四、分阶段训练计划</h3>
+                  
+                  <div v-if="parsedReport.planIntro" class="md-body" v-html="renderMarkdown(parsedReport.planIntro)"></div>
 
-              <!-- 训练计划 -->
-              <div class="section-block" v-if="parsedReport.plan">
-                <h3 class="section-title">四、分阶段训练计划</h3>
-                
-                <!-- Display Intro Text if exists -->
-                <div v-if="parsedReport.planIntro" class="md-body" v-html="renderMarkdown(parsedReport.planIntro)"></div>
+                  <div v-if="structuredPhases.length > 0" class="plan-tabs">
+                    <el-tabs v-model="activePhaseKey" type="card" class="plan-tabs-inner">
+                      <el-tab-pane v-for="phase in structuredPhases" :key="phase.key" :label="phase.tabLabel" :name="phase.key">
+                        <el-row :gutter="16" class="plan-summary-row">
+                          <el-col :span="12">
+                            <el-card shadow="never" class="plan-info-card">
+                              <div class="plan-info-title">
+                                <el-icon><InfoFilled /></el-icon>
+                                训练特点
+                              </div>
+                              <div class="md-body" v-html="renderMarkdown(phase.features || phase.goal || '')"></div>
+                            </el-card>
+                          </el-col>
+                          <el-col :span="12">
+                            <el-card shadow="never" class="plan-info-card goal-card">
+                              <div class="plan-info-title">
+                                <el-icon><Flag /></el-icon>
+                                阶段目标
+                              </div>
+                              <div class="md-body" v-html="renderMarkdown(phase.goal || '')"></div>
+                            </el-card>
+                          </el-col>
+                        </el-row>
 
-                <!-- 阶段展示 -->
-                <div v-if="parsedReport.phases.length > 0" class="phases-container">
-                  <div v-for="(phase, index) in parsedReport.phases" :key="index" class="phase-item">
-                    <h4 class="phase-title">{{ phase.title }}</h4>
-                    <div class="md-body" v-html="renderMarkdown(phase.content)"></div>
+                        <div class="weekly-title">
+                          <el-icon><Calendar /></el-icon>
+                          每周安排
+                        </div>
+
+                        <div class="week-grid">
+                          <el-card
+                            v-for="day in phase.week"
+                            :key="day.dayKey"
+                            shadow="never"
+                            class="day-card"
+                            :class="{ 'day-card--empty': !day.summary }"
+                          >
+                            <div class="day-name">{{ day.dayName }}</div>
+                            <el-popover v-if="day.detail" placement="top" trigger="hover" width="320">
+                              <template #reference>
+                                <div class="day-content">
+                                  <div class="day-summary">{{ day.summary }}</div>
+                                  <div v-if="day.subSummary" class="day-sub">{{ day.subSummary }}</div>
+                                </div>
+                              </template>
+                              <div class="md-body" v-html="renderMarkdown(day.detail)"></div>
+                            </el-popover>
+                            <div v-else class="day-content">
+                              <div class="day-summary">{{ day.summary || '—' }}</div>
+                              <div v-if="day.subSummary" class="day-sub">{{ day.subSummary }}</div>
+                            </div>
+                          </el-card>
+                        </div>
+
+                        <div v-if="phase.notes" class="phase-notes">
+                          <el-alert title="注意事项" type="warning" show-icon :closable="false">
+                            <div class="md-body" v-html="renderMarkdown(phase.notes)"></div>
+                          </el-alert>
+                        </div>
+                      </el-tab-pane>
+                    </el-tabs>
+                  </div>
+                  <div v-else-if="!parsedReport.planIntro" class="md-body" v-html="renderMarkdown(parsedReport.plan)"></div>
+                </div>
+
+                <div class="section-block warning-section" v-if="parsedReport.contraindications">
+                  <h3 class="section-title">五、运动禁忌</h3>
+                  <div class="md-body" v-html="renderMarkdown(parsedReport.contraindications)"></div>
+                </div>
+
+                <div class="section-row">
+                  <div class="section-block half-width" v-if="parsedReport.monitoring">
+                    <h3 class="section-title">六、进度监测</h3>
+                    <div class="md-body" v-html="renderMarkdown(parsedReport.monitoring)"></div>
+                  </div>
+                  
+                  <div class="section-block half-width" v-if="parsedReport.nutrition">
+                    <h3 class="section-title">七、营养建议</h3>
+                    <div class="md-body" v-html="renderMarkdown(parsedReport.nutrition)"></div>
                   </div>
                 </div>
-                <div v-else-if="!parsedReport.planIntro" class="md-body" v-html="renderMarkdown(parsedReport.plan)"></div>
-              </div>
-
-              <!-- 运动禁忌 -->
-              <div class="section-block warning-section" v-if="parsedReport.contraindications">
-                <h3 class="section-title">五、运动禁忌</h3>
-                <div class="md-body" v-html="renderMarkdown(parsedReport.contraindications)"></div>
-              </div>
-
-              <!-- 进度监测和营养建议 -->
-              <div class="section-row">
-                <div class="section-block half-width" v-if="parsedReport.monitoring">
-                  <h3 class="section-title">六、进度监测</h3>
-                  <div class="md-body" v-html="renderMarkdown(parsedReport.monitoring)"></div>
-                </div>
                 
-                <div class="section-block half-width" v-if="parsedReport.nutrition">
-                  <h3 class="section-title">七、营养建议</h3>
-                  <div class="md-body" v-html="renderMarkdown(parsedReport.nutrition)"></div>
+                <div class="disclaimer">
+                  <p>本运动推荐仅供参考，请您务必在专业人士指导下进行运动。</p>
                 </div>
               </div>
-              
-              <div class="disclaimer">
-                <p>本运动推荐仅供参考，请您务必在专业人士指导下进行运动。</p>
-              </div>
+            </div>
+
+            <div class="section-nav bottom-nav">
+              <el-button :disabled="currentPart === 1" @click="prevPart">上一页</el-button>
+              <div class="nav-indicator">第 {{ currentPart }} / {{ TOTAL_PARTS }} 页</div>
+              <el-button :disabled="currentPart === TOTAL_PARTS" type="primary" @click="nextPart">下一页</el-button>
             </div>
           </div>
         </el-card>
@@ -164,7 +228,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { InfoFilled, Flag, Calendar, Warning, TrendCharts, Apple, DataAnalysis } from '@element-plus/icons-vue'
@@ -182,6 +246,10 @@ const result = ref(null)
 const activeNames = ref(['1', '2', '3'])
 const radarChartRef = ref(null)
 let radarChart = null
+
+const TOTAL_PARTS = 3
+const currentPart = ref(1)
+const activePhaseKey = ref('phase-0')
 
 const metricNameMap = {
   "bmi": "BMI",
@@ -220,6 +288,20 @@ const goBack = () => {
   router.back()
 }
 
+const scrollToTop = () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+const nextPart = () => {
+  if (currentPart.value >= TOTAL_PARTS) return
+  currentPart.value += 1
+}
+
+const prevPart = () => {
+  if (currentPart.value <= 1) return
+  currentPart.value -= 1
+}
+
 const formatDate = (dateStr) => {
   if (!dateStr) return ''
   return new Date(dateStr).toLocaleString()
@@ -243,6 +325,8 @@ const fetchReport = async () => {
     
     if (response.data.code === 200) {
       profileData.value = response.data.data
+      currentPart.value = 1
+      activePhaseKey.value = 'phase-0'
       
       if (profileData.value.analysisResult) {
         try {
@@ -272,6 +356,18 @@ const fetchReport = async () => {
     loading.value = false
   }
 }
+
+watch(currentPart, async (val, prev) => {
+  if (prev === 1 && radarChart) {
+    radarChart.dispose()
+    radarChart = null
+  }
+  if (val === 1) {
+    await nextTick()
+    initRadarChart()
+  }
+  scrollToTop()
+})
 
 const getRatingType = (rating) => {
   if (rating === '优秀') return 'success'
@@ -404,43 +500,45 @@ const parsedReport = computed(() => {
   
   // Extract each section by matching between ### headers
   // 一、体质分析总结
-  const summaryMatch = report.match(/###\s+\*\*?一、\s*体质分析总结\*\*?/i)
+  const summaryMatch = report.match(/#{3,4}\s+(?:\*\*)?一、\s*体质分析总结(?:\*\*)?/i)
   if (summaryMatch) {
     const startIdx = summaryMatch.index + summaryMatch[0].length
-    const nextHeaderMatch = report.substring(startIdx).match(/###\s+\*\*?[二三四五六七]/i)
+    const nextHeaderMatch = report.substring(startIdx).match(/#{3,4}\s+(?:\*\*)?[二三四五六七]/i)
     const endIdx = nextHeaderMatch ? startIdx + nextHeaderMatch.index : report.length
     sections.summary = report.substring(startIdx, endIdx).trim()
   }
   
   // 二、各项指标评价
-  const evaluationMatch = report.match(/###\s+\*\*?二、\s*各项指标评价\*\*?/i)
+  const evaluationMatch = report.match(/#{3,4}\s+(?:\*\*)?二、\s*各项指标评价(?:\*\*)?/i)
   if (evaluationMatch) {
     const startIdx = evaluationMatch.index + evaluationMatch[0].length
-    const nextHeaderMatch = report.substring(startIdx).match(/###\s+\*\*?[三四五六七]/i)
+    const nextHeaderMatch = report.substring(startIdx).match(/#{3,4}\s+(?:\*\*)?[三四五六七]/i)
     const endIdx = nextHeaderMatch ? startIdx + nextHeaderMatch.index : report.length
     sections.evaluation = report.substring(startIdx, endIdx).trim()
   }
   
   // 三、运动处方目标
-  const goalsMatch = report.match(/###\s+\*\*?三、\s*运动处方目标\*\*?/i)
+  const goalsMatch = report.match(/#{3,4}\s+(?:\*\*)?三、\s*运动处方目标(?:\*\*)?/i)
   if (goalsMatch) {
     const startIdx = goalsMatch.index + goalsMatch[0].length
-    const nextHeaderMatch = report.substring(startIdx).match(/###\s+\*\*?[四五六七]/i)
+    const nextHeaderMatch = report.substring(startIdx).match(/#{3,4}\s+(?:\*\*)?[四五六七]/i)
     const endIdx = nextHeaderMatch ? startIdx + nextHeaderMatch.index : report.length
     sections.goals = report.substring(startIdx, endIdx).trim()
   }
   
   // 四、分阶段训练计划
-  const planMatch = report.match(/###\s+\*\*?四、\s*分阶段训练计划\*\*?/i)
+  const planMatch = report.match(/#{3,4}\s+(?:\*\*)?四、\s*分阶段训练计划(?:\s*（[^）]+）)?(?:\*\*)?/i)
   if (planMatch) {
     const startIdx = planMatch.index + planMatch[0].length
-    const nextHeaderMatch = report.substring(startIdx).match(/###\s+\*\*?[五六七]/i)
+    const nextHeaderMatch = report.substring(startIdx).match(/#{3,4}\s+(?:\*\*)?[五六七]/i)
     const endIdx = nextHeaderMatch ? startIdx + nextHeaderMatch.index : report.length
     const content = report.substring(startIdx, endIdx).trim()
     sections.plan = content
     
-    // Try to extract phases using #### headers
-    const phaseRegex = /####\s+(?:\*\*)?阶段([一二三四五六七八九十\d]+)\s*[:：]\s*(.*?)(?:\*\*)?(?:\n|$)/gi
+    // Try to extract phases for both templates:
+    // - report:  #### **阶段一：...**
+    // - report2: **阶段1：...**
+    const phaseRegex = /^(?:####\s+)?(?:\*\*)?阶段([一二三四五六七八九十0-9]+)\s*[:：]\s*(.*?)(?:\*\*)?\s*$/gmi
     const phases = []
     
     // Find all phase headers
@@ -471,25 +569,25 @@ const parsedReport = computed(() => {
   }
   
   // 五、运动禁忌
-  const contraindicationsMatch = report.match(/###\s+\*\*?五、\s*运动禁忌\*\*?/i)
+  const contraindicationsMatch = report.match(/#{3,4}\s+(?:\*\*)?五、\s*运动禁忌(?:\*\*)?/i)
   if (contraindicationsMatch) {
     const startIdx = contraindicationsMatch.index + contraindicationsMatch[0].length
-    const nextHeaderMatch = report.substring(startIdx).match(/###\s+\*\*?[六七]/i)
+    const nextHeaderMatch = report.substring(startIdx).match(/#{3,4}\s+(?:\*\*)?[六七]/i)
     const endIdx = nextHeaderMatch ? startIdx + nextHeaderMatch.index : report.length
     sections.contraindications = report.substring(startIdx, endIdx).trim()
   }
   
   // 六、进度监测
-  const monitoringMatch = report.match(/###\s+\*\*?六、\s*进度监测\*\*?/i)
+  const monitoringMatch = report.match(/#{3,4}\s+(?:\*\*)?六、\s*进度监测(?:\*\*)?/i)
   if (monitoringMatch) {
     const startIdx = monitoringMatch.index + monitoringMatch[0].length
-    const nextHeaderMatch = report.substring(startIdx).match(/###\s+\*\*?七/i)
+    const nextHeaderMatch = report.substring(startIdx).match(/#{3,4}\s+(?:\*\*)?七/i)
     const endIdx = nextHeaderMatch ? startIdx + nextHeaderMatch.index : report.length
     sections.monitoring = report.substring(startIdx, endIdx).trim()
   }
   
   // 七、营养建议
-  const nutritionMatch = report.match(/###\s+\*\*?七、\s*营养建议\*\*?/i)
+  const nutritionMatch = report.match(/#{3,4}\s+(?:\*\*)?七、\s*营养建议.*?(?:\*\*)?/i)
   if (nutritionMatch) {
     const startIdx = nutritionMatch.index + nutritionMatch[0].length
     // This is likely the last section, so take everything after it
@@ -502,9 +600,175 @@ const parsedReport = computed(() => {
   return sections
 })
 
+const structuredPhases = computed(() => {
+  const phases = parsedReport.value?.phases || []
+  if (!Array.isArray(phases) || phases.length === 0) return []
+
+  const dayKeyMap = {
+    周一: 'mon',
+    周二: 'tue',
+    周三: 'wed',
+    周四: 'thu',
+    周五: 'fri',
+    周六: 'sat',
+    周日: 'sun',
+    周天: 'sun'
+  }
+
+  const weekOrder = [
+    { dayName: '周一', dayKey: 'mon' },
+    { dayName: '周二', dayKey: 'tue' },
+    { dayName: '周三', dayKey: 'wed' },
+    { dayName: '周四', dayKey: 'thu' },
+    { dayName: '周五', dayKey: 'fri' },
+    { dayName: '周六', dayKey: 'sat' },
+    { dayName: '周日', dayKey: 'sun' }
+  ]
+
+  const stripMarkdown = (text) => String(text || '').replace(/\*\*/g, '').replace(/`/g, '').trim()
+
+  const extractGoal = (plain) => {
+    const match = plain.match(/阶段目标\s*[：:]\s*([^\n]+)/)
+    return match ? match[1].trim() : ''
+  }
+
+  const extractNotes = (plain) => {
+    const match = plain.match(/注意事项\s*[：:]\s*([\s\S]*)/)
+    return match ? match[1].trim() : ''
+  }
+
+  const extractFeatures = (goal) => {
+    const text = (goal || '').trim()
+    if (!text) return ''
+    const parts = text.split(/[。；]/).map((s) => s.trim()).filter(Boolean)
+    if (parts.length > 0) return parts[0]
+    const commaParts = text.split('，').map((s) => s.trim()).filter(Boolean)
+    return commaParts[0] || text
+  }
+
+  const parseWeek = (plain) => {
+    const weeklyStart = plain.indexOf('每周训练安排')
+    if (weeklyStart === -1) {
+      return weekOrder.map((d) => ({ ...d, summary: '', subSummary: '', detail: '' }))
+    }
+
+    const afterStart = plain.slice(weeklyStart)
+    const endByNotes = afterStart.indexOf('注意事项')
+    const weeklyText = (endByNotes === -1 ? afterStart : afterStart.slice(0, endByNotes))
+      .replace(/^.*每周训练安排[：:]*\s*/m, '')
+      .trim()
+
+    const dayRegex = /^\s*[*+-]\s*(周[一二三四五六日天])\s*[：:]\s*([\s\S]*?)(?=^\s*[*+-]\s*周[一二三四五六日天]\s*[：:]|\s*$)/gmi
+    const weekMap = {}
+    let match
+
+    while ((match = dayRegex.exec(weeklyText)) !== null) {
+      const dayName = match[1].replace('周天', '周日')
+      const key = dayKeyMap[dayName]
+      const detail = String(match[2] || '').trim()
+
+      const oneLine = detail.replace(/\s+/g, ' ').trim()
+      const firstSentence = oneLine.split('。')[0].trim()
+      const summary = firstSentence || oneLine
+      const remaining = oneLine.slice(summary.length).replace(/^。/, '').trim()
+      const subSummary = remaining ? remaining.split('。')[0].trim() : ''
+
+      weekMap[key] = {
+        dayName,
+        dayKey: key,
+        summary,
+        subSummary,
+        detail
+      }
+    }
+
+    return weekOrder.map((d) => weekMap[d.dayKey] || { ...d, summary: '', subSummary: '', detail: '' })
+  }
+
+  return phases.map((phase, idx) => {
+    const key = `phase-${idx}`
+    const title = stripMarkdown(phase.title || '')
+    const plain = stripMarkdown(phase.content || '')
+
+    const goal = extractGoal(plain)
+    const features = extractFeatures(goal)
+    const notes = extractNotes(plain)
+    const week = parseWeek(plain)
+
+    const rangeMatch = title.match(/（([^）]+)）/)
+    const range = rangeMatch ? rangeMatch[1].trim() : ''
+    const nameOnly = title
+      .replace(/^阶段[一二三四五六七八九十0-9]+[：:]\s*/, '')
+      .replace(/（[^）]+）/, '')
+      .trim()
+
+    const isPhaseRange = (text) => {
+      const t = String(text || '').replace(/\s+/g, '')
+      if (!t || !t.includes('周')) return false
+      if (/[\\-~—–]/.test(t)) return true
+      return /第?\d+周/.test(t)
+    }
+
+    const rangeLabel = isPhaseRange(range) ? range.replace(/\s+/g, '') : ''
+    const rawTabLabel = rangeLabel ? `${rangeLabel}：${nameOnly}` : (nameOnly || title || `阶段${idx + 1}`)
+    const tabLabel = rawTabLabel.replace(/\*/g, '').trim()
+
+    return { key, tabLabel, title, features, goal, week, notes }
+  })
+})
+
+watch(structuredPhases, (phases) => {
+  if (!Array.isArray(phases) || phases.length === 0) return
+  if (!phases.some((p) => p.key === activePhaseKey.value)) {
+    activePhaseKey.value = phases[0].key
+  }
+})
+
+const normalizeMarkdown = (text) => {
+  if (!text) return ''
+  const escapeSingleTildes = (input) => {
+    let out = ''
+    for (let i = 0; i < input.length; i++) {
+      const ch = input[i]
+      if (ch === '~') {
+        const prev = i > 0 ? input[i - 1] : ''
+        const next = i + 1 < input.length ? input[i + 1] : ''
+        if (prev !== '\\' && prev !== '~' && next !== '~') {
+          out += '\\~'
+          continue
+        }
+      }
+      out += ch
+    }
+    return out
+  }
+
+  const normalized = escapeSingleTildes(String(text).replace(/\r\n/g, '\n'))
+
+  // Normalize key-value lines such as "**总周期：** 12周" to bold the full line
+  const withKeyValueBold = normalized.replace(
+    /^\s*\*\*([^*\n]+?[：:])\*\*\s*([^\n]+)\s*$/gm,
+    '**$1$2**'
+  )
+
+  // Ensure lists are parsed correctly when they follow text without a blank line
+  const withListSpacing = withKeyValueBold.replace(
+    /([^\n])\n(\s*(?:[*+-]|\d+\.)\s+)/g,
+    '$1\n\n$2'
+  )
+
+  // Ensure consecutive bold lines render on separate lines/paragraphs (common in report2)
+  const withBoldSpacing = withListSpacing.replace(
+    /^(\s*\*\*[^*\n]+?\*\*.*)\n(\s*\*\*[^*\n]+?\*\*.*)$/gm,
+    '$1\n\n$2'
+  )
+
+  return withBoldSpacing.trim()
+}
+
 const renderMarkdown = (text) => {
   if (!text) return ''
-  return marked(text)
+  return marked(normalizeMarkdown(text))
 }
 
 onMounted(() => {
@@ -618,6 +882,26 @@ window.addEventListener('resize', () => {
   padding: 30px;
   border-radius: 4px;
 }
+.section-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #fff;
+  border-radius: 4px;
+  border: 1px solid #e4e7ed;
+  margin-bottom: 18px;
+}
+.bottom-nav {
+  margin-top: 18px;
+  margin-bottom: 0;
+}
+.nav-indicator {
+  color: #606266;
+  font-size: 14px;
+  font-weight: 500;
+}
 .intro-text {
   margin-bottom: 30px;
   padding-bottom: 20px;
@@ -655,6 +939,129 @@ window.addEventListener('resize', () => {
   font-weight: 600;
   color: #303133;
   margin-bottom: 12px;
+}
+
+/* 新的分阶段训练计划样式 */
+.plan-tabs {
+  margin-top: 16px;
+}
+.plan-tabs-inner :deep(.el-tabs__header) {
+  margin: 0 0 16px 0;
+}
+.plan-tabs-inner :deep(.el-tabs__item) {
+  font-size: 14px;
+  font-weight: 600;
+}
+.plan-tabs-inner :deep(.el-tabs__item.is-active) {
+  color: #1677ff;
+}
+.plan-tabs-inner :deep(.el-tabs__nav-wrap::after) {
+  background-color: transparent;
+}
+.plan-summary-row {
+  margin-bottom: 14px;
+}
+.plan-info-card {
+  border-radius: 6px;
+  border: 1px solid #e4e7ed;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+}
+.goal-card {
+  border-left: 3px solid #1677ff;
+}
+.plan-info-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 16px;
+  color: #303133;
+  margin-bottom: 10px;
+}
+.plan-info-title :deep(.el-icon) {
+  color: #1677ff;
+}
+.weekly-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 16px;
+  color: #303133;
+  margin: 12px 0 10px 0;
+}
+.weekly-title :deep(.el-icon) {
+  color: #1677ff;
+}
+.week-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+.day-card {
+  border-radius: 6px;
+  border: 1px solid #e4e7ed;
+  background: #fff;
+  transition: box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+}
+.day-card:hover {
+  border-color: #b9d3ff;
+  box-shadow: 0 8px 18px rgba(22, 119, 255, 0.12);
+  transform: translateY(-1px);
+}
+.day-card--empty {
+  opacity: 0.6;
+}
+.day-name {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(22, 119, 255, 0.08);
+  color: #1677ff;
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+.day-content {
+  cursor: default;
+}
+.day-summary {
+  font-size: 14px;
+  color: #303133;
+  line-height: 1.5;
+}
+.day-sub {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #606266;
+  line-height: 1.5;
+}
+.phase-notes {
+  margin-top: 14px;
+}
+.plan-tabs :deep(.md-body) {
+  font-size: 16px;
+  color: #374151;
+}
+.plan-tabs :deep(.md-body strong) {
+  color: #1677ff;
+  font-weight: 800;
+}
+.plan-tabs :deep(.el-alert__title) {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+@media (max-width: 1200px) {
+  .week-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 900px) {
+  .week-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 /* 并排布局 */
