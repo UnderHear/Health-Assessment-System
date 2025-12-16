@@ -21,78 +21,8 @@
           
           <div class="report-content">
 
-            <!-- 1. 综合概述，各项指标详细评分 -->
+            <!-- 1. 运动处方建议（原第2页） -->
             <div v-if="currentPart === 1">
-              <div class="overview-section">
-                <el-row :gutter="20" align="middle">
-                  <el-col :span="10">
-                    <div ref="radarChartRef" class="radar-chart"></div>
-                  </el-col>
-                  <el-col :span="14">
-                    <div class="score-summary">
-                      <h3 class="section-title">体质测试总评</h3>
-                      <div class="score-circle">
-                        <el-progress 
-                          type="dashboard" 
-                          :percentage="result.overall_score" 
-                          :color="getScoreColor"
-                          :width="180"
-                          :stroke-width="15"
-                        >
-                          <template #default="{ percentage }">
-                            <span class="percentage-value">{{ percentage }}</span>
-                            <span class="percentage-label">分</span>
-                          </template>
-                        </el-progress>
-                      </div>
-                      <div class="rating-badge">
-                        <el-tag :type="getRatingType(result.overall_rating)" effect="dark" size="large" class="rating-tag">
-                          {{ result.overall_rating }}
-                        </el-tag>
-                      </div>
-                    </div>
-                  </el-col>
-                </el-row>
-              </div>
-
-              <el-divider><span class="divider-title">各项指标详细评分</span></el-divider>
-
-              <el-table :data="metricsTableData" style="width: 100%" stripe border size="default" class="metrics-table">
-                <el-table-column prop="name" label="指标" width="160">
-                  <template #default="scope">
-                    <span class="metric-name">{{ scope.row.name }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="value" label="测试值" width="120" align="center">
-                  <template #default="scope">
-                    {{ scope.row.value }}
-                  </template>
-                </el-table-column>
-                <el-table-column prop="score" label="得分" width="100" align="center">
-                  <template #default="scope">
-                    <span class="metric-score" :style="{ color: getScoreColor(scope.row.score) }">{{ scope.row.score }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="评分进度" min-width="200">
-                  <template #default="scope">
-                    <el-progress 
-                      :percentage="scope.row.score" 
-                      :color="getScoreColor(scope.row.score)" 
-                      :format="() => ''"
-                      :stroke-width="12"
-                    />
-                  </template>
-                </el-table-column>
-                <el-table-column prop="rating" label="等级" width="120" align="center">
-                  <template #default="scope">
-                    <el-tag :type="getRatingType(scope.row.rating)" effect="plain">{{ scope.row.rating }}</el-tag>
-                  </template>
-                </el-table-column>
-              </el-table>
-            </div>
-
-            <!-- 2. 体质分析总结，各项指标评价，运动处方目标 -->
-            <div v-else-if="currentPart === 2">
               <el-divider><span class="divider-title">运动处方建议</span></el-divider>
 
               <div class="markdown-content">
@@ -115,8 +45,8 @@
               </div>
             </div>
 
-            <!-- 3. 分阶段训练周计划，运动禁忌，进度监测和营养建议 -->
-            <div v-else>
+            <!-- 2. 分阶段训练周计划，运动禁忌，进度监测和营养建议（原第3页） -->
+            <div v-else-if="currentPart === 2">
               <el-divider><span class="divider-title">运动处方建议</span></el-divider>
 
               <div class="markdown-content">
@@ -228,12 +158,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { InfoFilled, Flag, Calendar, Warning, TrendCharts, Apple, DataAnalysis } from '@element-plus/icons-vue'
 import axios from 'axios'
-import * as echarts from 'echarts'
 import { marked } from 'marked'
 import NavBar from '../components/NavBar.vue'
 import { API_BASE_URL, API_ENDPOINTS, buildUrl } from '../api/config'
@@ -243,11 +172,7 @@ const router = useRouter()
 const loading = ref(false)
 const profileData = ref(null)
 const result = ref(null)
-const activeNames = ref(['1', '2', '3'])
-const radarChartRef = ref(null)
-let radarChart = null
-
-const TOTAL_PARTS = 3
+const TOTAL_PARTS = 2
 const currentPart = ref(1)
 const activePhaseKey = ref('phase-0')
 
@@ -335,10 +260,6 @@ const fetchReport = async () => {
             ...analysisData,
             report: profileData.value.report
           }
-          
-          nextTick(() => {
-            initRadarChart()
-          })
         } catch (e) {
           console.error("Failed to parse analysis result JSON", e)
           ElMessage.error("报告数据解析失败")
@@ -357,15 +278,7 @@ const fetchReport = async () => {
   }
 }
 
-watch(currentPart, async (val, prev) => {
-  if (prev === 1 && radarChart) {
-    radarChart.dispose()
-    radarChart = null
-  }
-  if (val === 1) {
-    await nextTick()
-    initRadarChart()
-  }
+watch(currentPart, () => {
   scrollToTop()
 })
 
@@ -412,67 +325,6 @@ const metricsTableData = computed(() => {
     }
   })
 })
-
-const initRadarChart = () => {
-  if (!radarChartRef.value || !result.value) return
-  
-  if (radarChart) {
-    radarChart.dispose()
-  }
-  
-  radarChart = echarts.init(radarChartRef.value)
-  
-  const indicators = metricsTableData.value.map(item => ({
-    name: item.name,
-    max: 100
-  }))
-  
-  const dataValues = metricsTableData.value.map(item => item.score)
-  
-  const option = {
-    tooltip: {
-      appendToBody: true,
-      confine: false,
-      extraCssText: 'z-index: 9999;'
-    },
-    radar: {
-      indicator: indicators,
-      radius: '65%',
-      splitNumber: 4,
-      axisName: {
-        color: '#666'
-      },
-      splitArea: {
-        areaStyle: {
-          color: ['#f5f7fa', '#f5f7fa', '#f5f7fa', '#f5f7fa'],
-          shadowColor: 'rgba(0, 0, 0, 0.1)',
-          shadowBlur: 10
-        }
-      }
-    },
-    series: [{
-      name: '体质评分',
-      type: 'radar',
-      data: [
-        {
-          value: dataValues,
-          name: '各项指标得分',
-          areaStyle: {
-            color: 'rgba(64, 158, 255, 0.2)'
-          },
-          lineStyle: {
-            color: '#409EFF'
-          },
-          itemStyle: {
-            color: '#409EFF'
-          }
-        }
-      ]
-    }]
-  }
-  
-  radarChart.setOption(option)
-}
 
 // Report Parsing Logic with Improved Section Extraction
 const parsedReport = computed(() => {
@@ -774,13 +626,6 @@ const renderMarkdown = (text) => {
 onMounted(() => {
   fetchReport()
 })
-
-// Resize chart on window resize
-window.addEventListener('resize', () => {
-  if (radarChart) {
-    radarChart.resize()
-  }
-})
 </script>
 
 <style scoped>
@@ -790,7 +635,8 @@ window.addEventListener('resize', () => {
   min-height: 100vh;
 }
 .page-header {
-  margin-bottom: 20px;
+  max-width: 1200px;
+  margin: 0 auto 20px;
 }
 .content-wrapper {
   max-width: 1200px;
@@ -816,48 +662,6 @@ window.addEventListener('resize', () => {
   font-size: 13px;
   color: #909399;
   margin-top: 4px;
-}
-.overview-section {
-  margin-bottom: 30px;
-  padding: 20px;
-  background: #fff;
-  border-radius: 4px;
-}
-.radar-chart {
-  width: 100%;
-  height: 300px;
-}
-.score-summary {
-  text-align: center;
-  padding-top: 10px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-.score-circle {
-  margin-bottom: 15px;
-}
-.percentage-value {
-  display: block;
-  margin-top: 10px;
-  font-size: 40px;
-  font-weight: 600;
-  color: #303133;
-  line-height: 1.2;
-}
-.percentage-label {
-  display: block;
-  font-size: 14px;
-  color: #909399;
-}
-.rating-badge {
-  margin-top: 10px;
-}
-.rating-tag {
-  font-size: 16px;
-  padding: 6px 16px;
-  height: auto;
 }
 .divider-title {
   font-size: 16px;

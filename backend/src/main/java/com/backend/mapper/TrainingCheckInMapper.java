@@ -22,14 +22,14 @@ public interface TrainingCheckInMapper {
     int countCompletedByPlanId(Long planId);
     
     @Insert("INSERT INTO training_check_in (plan_id, user_id, check_in_date, week_number, " +
-            "day_of_week, exercise_type, duration, completed, notes) " +
+            "day_of_week, exercise_type, duration, avg_heart_rate, rpe, fatigue_level, completed, notes) " +
             "VALUES (#{planId}, #{userId}, #{checkInDate}, #{weekNumber}, #{dayOfWeek}, " +
-            "#{exerciseType}, #{duration}, #{completed}, #{notes})")
+            "#{exerciseType}, #{duration}, #{avgHeartRate}, #{rpe}, #{fatigueLevel}, #{completed}, #{notes})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(TrainingCheckIn checkIn);
     
-    @Update("UPDATE training_check_in SET completed = #{completed}, duration = #{duration}, " +
-            "notes = #{notes} WHERE id = #{id}")
+    @Update("UPDATE training_check_in SET exercise_type = #{exerciseType}, completed = #{completed}, duration = #{duration}, " +
+            "avg_heart_rate = #{avgHeartRate}, rpe = #{rpe}, fatigue_level = #{fatigueLevel}, notes = #{notes} WHERE id = #{id}")
     int update(TrainingCheckIn checkIn);
     
     @Delete("DELETE FROM training_check_in WHERE id = #{id}")

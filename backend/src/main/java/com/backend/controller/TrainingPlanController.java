@@ -55,10 +55,12 @@ public class TrainingPlanController {
         
         int completedCount = trainingPlanService.getCompletedCount(plan.getId());
         List<TrainingCheckIn> weekCheckIns = trainingPlanService.getWeekCheckIns(plan.getId(), currentWeek);
+        List<Map<String, Object>> weeklySchedule = trainingPlanService.getWeeklySchedule(plan, currentWeek);
         
         result.put("currentWeek", currentWeek);
         result.put("totalCompleted", completedCount);
         result.put("weekCheckIns", weekCheckIns);
+        result.put("weeklySchedule", weeklySchedule);
         
         // 计算总天数和剩余天数
         long totalDays = ChronoUnit.DAYS.between(plan.getStartDate(), plan.getEndDate()) + 1;
@@ -113,6 +115,9 @@ public class TrainingPlanController {
         checkIn.setDayOfWeek(dayOfWeek);
         checkIn.setExerciseType(request.getExerciseType());
         checkIn.setDuration(request.getDuration());
+        checkIn.setAvgHeartRate(request.getAvgHeartRate());
+        checkIn.setRpe(request.getRpe());
+        checkIn.setFatigueLevel(request.getFatigueLevel());
         checkIn.setCompleted(request.getCompleted());
         checkIn.setNotes(request.getNotes());
         

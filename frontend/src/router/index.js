@@ -5,6 +5,7 @@ import HistoryView from '../views/HistoryView.vue'
 import ReportDetailView from '../views/ReportDetailView.vue'
 import PlanView from '../views/PlanView.vue'
 import ProfileView from '../views/ProfileView.vue'
+import HealthView from '../views/HealthView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -43,6 +44,12 @@ const router = createRouter({
       path: '/profile',
       name: 'profile',
       component: ProfileView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/health',
+      name: 'health',
+      component: HealthView,
       meta: { requiresAuth: true }
     }
   ]

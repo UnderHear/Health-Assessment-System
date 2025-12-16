@@ -2,6 +2,7 @@
   <div class="page-container">
     <NavBar />
     <el-main>
+      <div class="content-container">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-card class="box-card">
@@ -212,6 +213,7 @@
           </el-card>
         </el-col>
       </el-row>
+      </div>
     </el-main>
   </div>
 </template>
@@ -492,6 +494,10 @@ const fetchProfile = async () => {
   padding: 20px;
   background-color: #f5f7fa;
   min-height: 100vh;
+}
+.content-container {
+  max-width: 1200px;
+  margin: 0 auto;
 }
 .card-header {
   display: flex;

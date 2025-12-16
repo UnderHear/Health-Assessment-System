@@ -14,6 +14,9 @@ public class TrainingCheckIn {
     private Integer dayOfWeek;
     private String exerciseType;
     private Integer duration;
+    private Integer avgHeartRate;
+    private Integer rpe;
+    private String fatigueLevel;
     private Boolean completed;
     private String notes;
     private LocalDateTime createTime;

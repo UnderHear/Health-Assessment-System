@@ -2,62 +2,64 @@
   <div class="page-container">
     <NavBar />
     <el-main>
-      <div class="header-section">
-        <h2 class="page-title">测试记录</h2>
-      </div>
-
-      <div v-loading="loading" class="records-container">
-        <div v-if="historyList.length === 0 && !loading" class="empty-state">
-          <el-empty description="暂无测试记录" />
+      <div class="content-container">
+        <div class="header-section">
+          <h2 class="page-title">测试记录</h2>
         </div>
 
-        <div class="records-grid">
-          <el-card 
-            v-for="record in historyList" 
-            :key="record.id"
-            class="record-card" 
-            :class="{ 'disabled-card': record.status !== 'COMPLETED' }" 
-            @click="handleCardClick(record)"
-          >
-            <div class="card-header-section">
-              <div class="time-status">
-                <div class="test-time">{{ formatDate(record.createTime) }}</div>
-                <el-tag :type="getStatusType(record.status)" size="small">
-                  {{ getStatusText(record.status) }}
-                </el-tag>
-              </div>
-            </div>
+        <div v-loading="loading" class="records-container">
+          <div v-if="historyList.length === 0 && !loading" class="empty-state">
+            <el-empty description="暂无测试记录" />
+          </div>
 
-            <div v-if="record.status === 'COMPLETED'" class="card-content">
-              <div :ref="el => setChartRef(el, record.id)" class="mini-radar-chart"></div>
-              
-              <div class="score-info">
-                <div class="overall-score">
-                  <span class="score-value">{{ getOverallScore(record) }}</span>
-                  <span class="score-label">分</span>
+          <div class="records-grid">
+            <el-card 
+              v-for="record in historyList" 
+              :key="record.id"
+              class="record-card" 
+              :class="{ 'disabled-card': record.status !== 'COMPLETED' }" 
+              @click="handleCardClick(record)"
+            >
+              <div class="card-header-section">
+                <div class="time-status">
+                  <div class="test-time">{{ formatDate(record.createTime) }}</div>
+                  <el-tag :type="getStatusType(record.status)" size="small">
+                    {{ getStatusText(record.status) }}
+                  </el-tag>
                 </div>
-                <div class="rating-text">{{ getOverallRating(record) }}</div>
               </div>
 
-              <el-button type="primary" size="small" class="view-btn" @click.stop="viewDetail(record.id)">
-                查看详情
-              </el-button>
-            </div>
+              <div v-if="record.status === 'COMPLETED'" class="card-content">
+                <div :ref="el => setChartRef(el, record.id)" class="mini-radar-chart"></div>
+                
+                <div class="score-info">
+                  <div class="overall-score">
+                    <span class="score-value">{{ getOverallScore(record) }}</span>
+                    <span class="score-label">分</span>
+                  </div>
+                  <div class="rating-text">{{ getOverallRating(record) }}</div>
+                </div>
 
-            <div v-else class="card-content-placeholder">
-              <div class="status-icon">
-                <el-icon v-if="record.status === 'GENERATING'" :size="40" class="loading-icon">
-                  <Loading />
-                </el-icon>
-                <el-icon v-else-if="record.status === 'FAILED'" :size="40" class="error-icon">
-                  <CircleClose />
-                </el-icon>
+                <el-button type="primary" size="small" class="view-btn" @click.stop="viewDetail(record.id)">
+                  查看详情
+                </el-button>
               </div>
-              <div class="status-text">
-                {{ record.status === 'GENERATING' ? '报告生成中...' : '生成失败' }}
+
+              <div v-else class="card-content-placeholder">
+                <div class="status-icon">
+                  <el-icon v-if="record.status === 'GENERATING'" :size="40" class="loading-icon">
+                    <Loading />
+                  </el-icon>
+                  <el-icon v-else-if="record.status === 'FAILED'" :size="40" class="error-icon">
+                    <CircleClose />
+                  </el-icon>
+                </div>
+                <div class="status-text">
+                  {{ record.status === 'GENERATING' ? '报告生成中...' : '生成失败' }}
+                </div>
               </div>
-            </div>
-          </el-card>
+            </el-card>
+          </div>
         </div>
       </div>
     </el-main>
@@ -288,6 +290,10 @@ window.addEventListener('resize', () => {
   padding: 20px;
   background-color: #f5f7fa;
   min-height: 100vh;
+}
+.content-container {
+  max-width: 1200px;
+  margin: 0 auto;
 }
 .header-section {
   margin-bottom: 24px;

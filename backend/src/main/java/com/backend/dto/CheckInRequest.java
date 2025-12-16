@@ -9,6 +9,9 @@ public class CheckInRequest {
     private LocalDate checkInDate;
     private String exerciseType;
     private Integer duration;
+    private Integer avgHeartRate;
+    private Integer rpe;
+    private String fatigueLevel;
     private Boolean completed;
     private String notes;
 }

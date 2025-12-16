@@ -13,6 +13,7 @@
     >
       <el-menu-item index="/">开始测试</el-menu-item>
       <el-menu-item index="/history">测试记录</el-menu-item>
+      <el-menu-item index="/health">健康管理</el-menu-item>
       <el-menu-item index="/plan">我的计划</el-menu-item>
       <el-menu-item index="/profile">个人信息</el-menu-item>
     </el-menu>
