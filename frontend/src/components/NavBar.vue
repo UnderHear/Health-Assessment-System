@@ -1,7 +1,7 @@
 <template>
   <el-header class="top-header">
     <div class="logo">
-      <h1>体质测试健康分析与运动处方推荐系统</h1>
+      <h1>体质健康测试分析与运动处方推荐系统</h1>
     </div>
 
     <el-menu
