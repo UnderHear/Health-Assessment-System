@@ -2,7 +2,8 @@
   <div class="login-container">
     <div class="login-box">
       <div class="login-header">
-        <h1>体质测试健康分析与运动处方推荐系统</h1>
+        <h1>体质测试健康分析与</h1>
+        <h1>运动处方推荐系统</h1>
         <p>请登录以继续使用系统</p>
       </div>
       
